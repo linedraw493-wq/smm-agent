@@ -10,7 +10,7 @@ related: [HOME, alya]
 
 # Принципы уровня Али — дельты
 
-База конвенций — `C:/Claude/jabjik/meta-vault/principles.md`. Здесь только то,
+База конвенций — `C:/Claude/kot/meta-vault/principles.md`. Здесь только то,
 что у Али **иначе**. Наследования нет: полный набор общих правил повторён в
 двери `../CLAUDE.md`.
 

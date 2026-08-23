@@ -6,10 +6,10 @@
     python tg_read.py --chat @canal --since 2026-08-01 -o work/chat.md
 
 Своего кода тут почти нет и это намеренно: настоящий читатель живёт в
-`C:/Claude/jabjik/tools/tg-reader/` и работает с 2026-08-18. Копировать его
+`C:/Claude/kot/tools/tg-reader/` и работает с 2026-08-18. Копировать его
 к себе значит завести второй экземпляр, который разойдётся с первым за месяц.
 
-ЧТО ЭТО ЗА ИСКЛЮЧЕНИЕ. Але сказано не лезть в `jabjik/` — это уровень Кота.
+ЧТО ЭТО ЗА ИСКЛЮЧЕНИЕ. Але сказано не лезть в `kot/` — это уровень Кота.
 Здесь исключение, выданное владельцем 2026-08-23: **только чтение**, только
 этот инструмент и доступы, которые он сам себе находит. Границы —
 `alya-vault/decisions/2026-08-23-alya-telegram.md`.
@@ -29,7 +29,7 @@ import os
 import subprocess
 import sys
 
-READER = r"C:\Claude\jabjik\tools\tg-reader\read.py"
+READER = r"C:\Claude\kot\tools\tg-reader\read.py"
 BANNED = ("--send", "--reply", "--post", "--join", "--react", "--delete")
 
 
@@ -57,7 +57,7 @@ def main():
     if r.returncode:
         print("\nЧитатель вернул ошибку. Частая причина — сессия истекла: "
               "вход выполняет ВЛАДЕЛЕЦ сам, командой\n"
-              "  python C:\\Claude\\jabjik\\tools\\tg-reader\\login.py\n"
+              "  python C:\\Claude\\kot\\tools\\tg-reader\\login.py\n"
               "Коды и пароли Аля не вводит никогда.", file=sys.stderr)
     sys.exit(r.returncode)
 

@@ -181,6 +181,20 @@ def one(url, author, title, lang, date):
     name = f"{date}-{slug(author, 20)}-{slug(title, 30)}"
     folder = os.path.join(REF, name)
     print(f"\n▸ {author} — {title}")
+
+    # Карточка, в которую уже писали глазами, не перезаписывается никогда.
+    # Ловушка поймана 2026-08-23: `--channel -n 6` берёт СВЕЖИЕ ролики, а
+    # свежие почти всегда те же, что в прошлый раз. Один повторный прогон
+    # стирал бы разбор — самое дорогое, что здесь есть, и единственное, что
+    # машина не восстановит. Числа снимаются заново за минуту, приём — нет.
+    card = os.path.join(CARDS, name + ".md")
+    if os.path.exists(card):
+        with open(card, encoding="utf-8") as f:
+            if "Разобрано глазами" in f.read():
+                print(f"  разобрана глазами — не трогаю: "
+                      f"{os.path.relpath(card, REPO)}")
+                return None
+
     src = fetch(url, folder)
     if not src:
         return None
@@ -192,7 +206,6 @@ def one(url, author, title, lang, date):
                                            "крючок визуальный)"
 
     os.makedirs(CARDS, exist_ok=True)
-    card = os.path.join(CARDS, name + ".md")
     with open(card, "w", encoding="utf-8") as f:
         f.write(CARD.format(url=url, author=author, title=title, date=date,
                             sheet=os.path.relpath(sheet, REPO).replace("\\", "/"),

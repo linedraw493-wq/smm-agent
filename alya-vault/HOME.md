@@ -3,7 +3,7 @@ type: index
 status: active
 sensitivity: normal
 scope: work
-updated: 2026-08-23
+updated: 2026-08-24
 tags: [home, index, alya, reelsmaker]
 related: [alya, status, backlog, sources]
 ---
@@ -84,13 +84,26 @@ related: [alya, status, backlog, sources]
 
 ## Обучение — `trends/`
 
-Единственная зона, куда Аля пишет сама, по расписанию.
+Зона, куда Аля пишет сама, по расписанию. С 2026-08-23 без спроса она
+работает **по всему ремеслу** ([[decisions/2026-08-23-alya-polnyy-dostup]]);
+`trends/` остаётся местом, где живёт разбор чужого.
 [[trends/HOME]] · [[trends/watchlist]] · [[trends/platform-signals]] ·
 [[trends/digest]] · сырьё в `trends/log/` · разборы в `trends/teardowns/`.
+
+**Прогоны:**
+[[trends/log/2026-08-23-vizual-razbor]] — 2026-08-23, **как сложена
+картинка, звук, субтитры, вставки и монтаж**: 24 ролика глазами, восемь
+авторов, YouTube и Instagram; девять общих приёмов и что из них берёт наш
+конвейер.
+
+**Корпус чисел** (машиной, из просмотренного):
+[[school/corpus/2026-08-23-koridor]] — коридор по 24 роликам ·
+[[school/corpus/2026-08-23-kak-eto-vyglyadit]] — первый замер против нашего.
 
 ## Решения — `decisions/`
 
 [[decisions/2026-08-23-alya-agent]] ·
+[[decisions/2026-08-23-alya-polnyy-dostup]] — **права: всё ремесло без спроса, кроме постинга** ·
 [[decisions/2026-08-23-alya-avtonomnoe-obuchenie]] ·
 [[decisions/2026-08-23-alya-ruki-naruzhu]] ·
 [[decisions/2026-08-23-hranenie-i-segmentaciya]] ·

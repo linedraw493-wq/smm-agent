@@ -3,7 +3,7 @@
 
     python tg_files.py --chat 937364130 -n 8 -o projects/<выпуск>/raw
 
-Зачем отдельный модуль. Читатель Кота (`tg_read.py` → `jabjik/tools/tg-reader`)
+Зачем отдельный модуль. Читатель Кота (`tg_read.py` → `kot/tools/tg-reader`)
 печатает вложение заглушкой `[MessageMediaDocument]` и файлы не тянет. А сырьё
 для роликов владелец скидывает именно файлами. Дырка закрыта здесь.
 
@@ -25,7 +25,7 @@ import os
 import sys
 from pathlib import Path
 
-READER = Path(r"C:\Claude\jabjik\tools\tg-reader")
+READER = Path(r"C:\Claude\kot\tools\tg-reader")
 if not (READER / "tg.py").exists():
     sys.exit(f"нет читателя: {READER}\nБез него доступа к Telegram нет.")
 sys.path.insert(0, str(READER))

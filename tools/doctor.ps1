@@ -53,9 +53,9 @@ foreach ($f in @("Inter-Regular.ttf","Inter-SemiBold.ttf","Inter-ExtraBold.ttf",
 Write-Host "--- Telegram (только чтение) ---"
 & python -c "import telethon" 2>$null
 if ($LASTEXITCODE -eq 0) { Ok "telethon" } else { Warn "telethon нет — Telegram недоступен" }
-if (Test-Path "C:/Claude/jabjik/tools/tg-reader/read.py") { Ok "читатель Кота на месте" }
+if (Test-Path "C:/Claude/kot/tools/tg-reader/read.py") { Ok "читатель Кота на месте" }
 else { Warn "читателя нет — без него доступа к Telegram нет" }
-if (Test-Path "C:/Claude/jabjik/secrets/tg.session") { Ok "сессия владельца есть, вход не нужен" }
+if (Test-Path "C:/Claude/kot/secrets/tg.session") { Ok "сессия владельца есть, вход не нужен" }
 else { Warn "сессии нет — вход выполняет ВЛАДЕЛЕЦ сам, через login.py" }
 
 Write-Host ""
