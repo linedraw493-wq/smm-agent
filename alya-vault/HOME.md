@@ -28,6 +28,17 @@ related: [alya, status, backlog, sources]
 - [[sources]] — откуда взялось знание и чего в источниках не было.
 - [[questions-vladelcu]] — что не сошлось; ждёт ответа.
 
+## Школа — `school/`
+
+**Учёба заканчивается не прочитанным файлом, а сданным экзаменом.**
+Заведена 2026-08-23 словом владельца ([[decisions/2026-08-23-shkola-ali]]).
+
+- [[school/HOME]] — карта школы: что было не так и как учимся.
+- [[school/programma]] — семь кафедр и таблица состояния.
+- [[school/exams]] — чем закрывается каждая кафедра.
+- [[school/corpus/README]] — эталоны в цифрах. **Пусто, ждёт списка владельца.**
+- [[school/razbor-2026-08-23-reel-v3]] — разбор своей работы, образец формы.
+
 ## Ремесло — `craft/`
 
 Пороги, цифры, ffmpeg-цепочки. **Здесь истина по числам.** Расходится с
@@ -39,6 +50,16 @@ related: [alya, status, backlog, sources]
 - [[craft/design-system]] — цвета, шрифты, геометрия, один рендерер.
 - [[craft/hooks-and-formats]] — крючок, каркас 20–30 секунд, форматы, призыв.
 - [[craft/reference-designs]] — **база дизайна**: свой эталон и чужое, что смотреть.
+
+Заведено школой 2026-08-23:
+
+- [[craft/self-review]] — **приёмка глазами**: три прохода и рубрика из 12 вопросов.
+- [[craft/color]] — цвет: тонмап, сведение планов, экспозиция, кожа.
+- [[craft/montage]] — ритм, крупности, типы резов, порядок планов.
+- [[craft/sound-design]] — пять слоёв звука: SFX, атмосфера, музыка, тишина.
+- [[craft/scriptwriting]] — структуры сценария, восемь заготовок крючка.
+- [[craft/marketing]] — оффер, зритель, возражения, воронка, тесты.
+- [[craft/platform-specs]] — спеки, **безопасная зона**, громкость по площадкам.
 
 ## Конвейер — `pipelines/`
 
@@ -57,7 +78,9 @@ related: [alya, status, backlog, sources]
 Источники: [[operations/chitat-telegram]] — Telegram владельца, только чтение.
 Разбор чужого: [[operations/razobrat-rolik]] · [[operations/razobrat-post]] ·
 [[operations/razobrat-dizayn]].
-Петля: [[operations/razvedka-trendov]] · [[operations/zakryt-vypusk]].
+Приёмка: [[operations/posmotret-rabotu]] — **обязательна перед каждым показом**.
+Петля: [[operations/razvedka-trendov]] · [[operations/uchitsya]] ·
+[[operations/zakryt-vypusk]].
 
 ## Обучение — `trends/`
 

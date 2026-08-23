@@ -70,18 +70,40 @@ INTER_XB = os.path.join(FONTS, "Inter-ExtraBold.ttf")
 PF_SB = os.path.join(FONTS, "PlayfairDisplay-SemiBold.ttf")
 PF_IT = os.path.join(FONTS, "PlayfairDisplay-SemiBoldItalic.ttf")
 
-# ─── тонмап HLG/HDR → SDR. ПОРЯДОК: тонмап ПЕРВЫМ, плашки после ───────────
-TONEMAP = (
-    "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,"
-    "tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p"
-)
-TONEMAP_COVER = (
-    "zscale=t=linear:npl=250,format=gbrpf32le,zscale=p=bt709,"
-    "tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p"
-)
+# ─── тонмап HDR → SDR. ПОРЯДОК: тонмап ПЕРВЫМ, плашки после ───────────────
+# Айфон пишет и HLG, и PQ (`smpte2084`) — смотреть в файл, а не помнить:
+#   ffprobe -select_streams v:0 -show_entries stream=color_transfer
+#
+# ⚠️ Правлено 2026-08-23 после разбора первого ролика (craft/color.md).
+# Было npl=100 + desat=0 — и это выжигало небо PQ-исходника в розовое пятно
+# ДО входа в грейд. Замер: пурпур в светах +7.7, выбито 0.36%.
+# Стало npl=400 + desat=2: пурпур +2.7, выбито 0.00%.
+#
+# NPL — НЕ константа, а параметр материала. 400 подошло солнечной улице;
+# тёмный интерьер требует меньше, снег и небо — больше. Подбирать свипом
+# на САМОМ СВЕТЛОМ кадре, число писать в run.md выпуска.
+NPL_DEFAULT = 400
 
-# ─── звук: жёсткие гейты (craft/audio) ────────────────────────────────────
-LUFS_TARGET = -16
+
+def tonemap(npl=None):
+    """Цепочка тонмапа под конкретный материал."""
+    return (
+        f"zscale=t=linear:npl={npl or NPL_DEFAULT},format=gbrpf32le,"
+        "zscale=p=bt709,tonemap=tonemap=hable:desat=2,"
+        "zscale=t=bt709:m=bt709:r=tv,format=yuv420p"
+    )
+
+
+TONEMAP = tonemap()
+# У обложки тот же npl, что у видео: разные дадут разный цвет там,
+# где зритель ждёт один.
+TONEMAP_COVER = tonemap()
+
+# ─── звук: жёсткие гейты (craft/audio, craft/sound-design) ────────────────
+# −16 было тише площадки. Замер 2026-08-23: YouTube и Reels нормализуют к
+# −14, TikTok в ленте не нормализует вовсе. Ролик на −16 звучит тише
+# соседних. Норма приведена к площадкам (craft/platform-specs.md).
+LUFS_TARGET = -14
 TRUE_PEAK = -1
 LRA = 11
 VOICE_CHAIN = "highpass=100,arnndn=m={rnnoise}:mix=0.85,afftdn=nr=7"

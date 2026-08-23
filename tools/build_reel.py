@@ -41,17 +41,81 @@ QUALITY = {
 LOOK = {
     # ничего. Для уже отгрейженного материала и для кожи крупным планом
     "natural": None,
-    # дефолт: аккуратный подъём насыщенности и контраста, тени чуть глубже,
-    # мягкая резкость по яркости (по цвету не трогаем — полезут артефакты)
-    "rich": ("eq=saturation=1.14:contrast=1.06:gamma=0.98,"
-             "curves=all='0/0 0.22/0.18 0.75/0.79 1/1',"
-             "unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=0.7"
-             ":chroma_amount=0"),
+    # ⚠️ ОТМЕНЁН 2026-08-23. Оставлен только для пересборки старых выпусков.
+    #
+    # Профиль нарушал сразу два собственных правила ремесла, записанных в
+    # craft/video-station: eq=contrast=1.06 ПОВЕРХ curves (контраст тянется
+    # дважды, оба конца уходят в стену — механизм пересветов) и unsharp
+    # поверх ужатия 2160→1080 (каёмки по контурам — «странная резкость»).
+    # Правило было записано, дефолтный код его не исполнял.
+    #
+    # Дефолт переведён на `alive`: слово владельца, третья правка подряд —
+    # «вместо насыщенности цветов ты вытягиваешь контраст, яркость».
+    # Тон не трогается вообще, поднимается только цвет.
+    "rich": "vibrance=intensity=0.50",
     # для записи экрана: резкость выше, насыщенность почти не трогаем —
     # интерфейсы и так насыщенные, а текст должен быть острым
     "screen": ("eq=saturation=1.04:contrast=1.08,"
                "unsharp=luma_msize_x=3:luma_msize_y=3:luma_amount=1.1"
                ":chroma_amount=0"),
+    # «киношный». Слово владельца 2026-08-23: «ярко вытягивает контраст,
+    # тени и насыщает цвета в более природные, но яркие», НЕ сплошной фильтр.
+    #
+    # Профиль подобран НЕ на глаз, а стендом `grade_lab.py` по доле выбитых
+    # и задавленных пикселей. Предыдущая версия (кривая + eq=contrast сверху)
+    # выжигала 6.8% кадра в белое и давила 20% в чёрное — владелец забраковал.
+    # Здесь: выбито 0.01%, пик 0.09%, чёрного 0.00%, насыщенность 0.321
+    # против 0.169 у исходника.
+    #
+    # Три решения и почему именно они:
+    # 1. Контраст — ТОЛЬКО кривой, никакого eq=contrast сверху. Именно эта
+    #    пара и выжгла прошлую версию: кривая тянет, а eq тянет ещё раз.
+    #    Плечо 0.88->0.925 (наклон к белому 0.62) ужимает подход к 255
+    #    вместо того, чтобы втыкаться в него.
+    # 2. ПОДНЯТЫЙ ЧЁРНЫЙ 0->0.012. Приём плёнки: низ садится чуть выше нуля.
+    #    Замер: доля пикселей в абсолютном чёрном падает с 1.07% (исходник)
+    #    до 0.00%. Тени глубокие, но с деталью — ровно то, чего владельцу
+    #    не хватало.
+    # 3. vibrance вместо eq=saturation. Vibrance тянет бледное сильнее
+    #    насыщенного: зелень оживает, кожа не уходит в загар и каналы не
+    #    клипуют поодиночке. eq=saturation дёргает всё поровну и выбивает
+    #    то, что и так было ярким.
+    #
+    # Резкости здесь НЕТ намеренно. unsharp поверх двукратного ужатия рисует
+    # каёмки — это и была «странная резкость». Детали берёт lanczos в
+    # fit_chain, на самом масштабировании.
+    # «живой» — то, что владелец просил с самого начала и чего я дважды
+    # не сделала. Слово владельца 2026-08-23, третья правка подряд:
+    # «вместо насыщенности цветов ты вытягиваешь контраст, яркость —
+    # ты ошиблась в формулировке и настройке».
+    #
+    # Он прав буквально. Профиль cinematic поднимал кривой 0.62->0.665 и
+    # 0.88->0.925 — это подъём ЯРКОСТИ. Насыщенность при этом ушла на 0.321
+    # при том, что естественный уровень на его же фотографии — 0.222.
+    # Натуральность убита ровно этим: тон тянули, цвет перекрутили.
+    #
+    # Здесь ТОН НЕ ТРОГАЕТСЯ ВООБЩЕ. Ни кривой, ни contrast, ни gamma,
+    # ни brightness. Только цвет, и только до естественного уровня.
+    #
+    # Работает это лишь в паре с покусковым выравниванием (--match в
+    # join_clips): без него профиль ляжет на куски, которые сами по себе
+    # разной светлоты и белизны, и «разный цветокор» останется.
+    # Величина подобрана стендом, не на глаз. Замер на выровненном материале:
+    #   как есть      яркость 0.416, насыщ 0.160
+    #   vibrance 0.40 яркость 0.417, насыщ 0.214
+    #   vibrance 0.50 яркость 0.417, насыщ 0.226   <- взято
+    #   vibrance 0.65 яркость 0.417, насыщ 0.244
+    #   отвергнутый v3 яркость 0.433, насыщ 0.304
+    # Ориентир — фотография владельца того же дня: насыщенность 0.222.
+    # Яркость во всех вариантах с чистым цветом стоит на 0.417 и не
+    # шевелится; у отвергнутого профиля она уехала на 0.433. Это и есть
+    # разница между «насытить цвет» и «поднять яркость».
+    "alive": "vibrance=intensity=0.50",
+
+    "cinematic": ("colorbalance=bs=0.028:rh=0.014:bh=-0.010,"
+                  "curves=all='0/0.012 0.10/0.095 0.30/0.30 0.62/0.665 "
+                  "0.88/0.925 1/1',"
+                  "vibrance=intensity=0.85"),
 }
 
 
@@ -93,12 +157,37 @@ def trim_graph(cuts, with_audio):
 
 
 def probe_size(path):
+    """Размер кадра КАК ЕГО ВИДНО, с учётом поворота в метаданных.
+
+    Телефон пишет вертикальное видео горизонтальным кадром плюс матрица
+    поворота: ffprobe покажет 3840x2160, а декодер выдаст 2160x3840.
+    Взять сырые width/height — значит принять вертикальный материал за
+    горизонтальный и включить кадрирование там, где кадрировать нечего.
+    Поймано 2026-08-23 на семи клипах с айфона: fit=auto ушёл в blur и
+    подставил размытые поля вокруг и без того вертикального кадра.
+    """
     r = subprocess.run(
         [config.FFPROBE, "-v", "error", "-select_streams", "v:0",
-         "-show_entries", "stream=width,height", "-of", "json", path],
+         "-show_entries", "stream=width,height:stream_side_data=rotation",
+         "-of", "json", path],
         capture_output=True, text=True, check=True)
     st = (json.loads(r.stdout).get("streams") or [{}])[0]
-    return int(st.get("width", 0)), int(st.get("height", 0))
+    w, h = int(st.get("width", 0)), int(st.get("height", 0))
+
+    rot = 0
+    for sd in st.get("side_data_list", []) or []:
+        if "rotation" in sd:
+            rot = int(float(sd["rotation"]))
+            break
+    if rot == 0:                      # старые файлы держат поворот в тегах
+        try:
+            rot = int(float(st.get("tags", {}).get("rotate", 0)))
+        except (TypeError, ValueError):
+            rot = 0
+
+    if abs(rot) % 180 == 90:
+        w, h = h, w
+    return w, h
 
 
 def fit_chain(path, mode):
@@ -122,8 +211,12 @@ def fit_chain(path, mode):
         print("--fit auto -> %s (исходник %dx%d, кроп сохранил бы %d%% ширины)"
               % (mode, sw, sh, round(keep * 100)))
 
-    cover = ("scale=%d:%d:force_original_aspect_ratio=increase" % (W, H))
-    contain = ("scale=%d:%d:force_original_aspect_ratio=decrease" % (W, H))
+    # flags=lanczos, а не дефолтный бикубик. Ужатие 2160->1080 двукратное:
+    # бикубик отдаёт мягкий кадр, который потом «спасают» нерезкой маской —
+    # и получают каёмки по контурам. Владелец назвал это «странная резкость»
+    # 2026-08-23. Lanczos берёт детали на самом ужатии, и unsharp не нужен.
+    cover = ("scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos" % (W, H))
+    contain = ("scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos" % (W, H))
 
     if mode == "crop":
         return cover + ",crop=%d:%d" % (W, H)
@@ -149,14 +242,25 @@ def main():
     ap.add_argument("--audio", default=None)
     ap.add_argument("--subs", default=None)
     ap.add_argument("--overlay", default=None, help="PNG плашек на весь кадр")
-    ap.add_argument("--hdr", action="store_true", help="исходник HLG/HDR с телефона")
+    ap.add_argument("--hdr", action="store_true", help="исходник HLG/PQ с телефона")
+    ap.add_argument("--npl", type=int, default=None,
+                    help="порог тонмапа: НЕ константа, а параметр материала. "
+                         "Подбирается свипом на самом светлом кадре "
+                         "(craft/color.md), дефолт %d" % config.NPL_DEFAULT)
     ap.add_argument("--fade", type=float, default=0.0, help="фейд в конце, с")
     ap.add_argument("--crf", type=int, default=None, help="перебить crf профиля")
     ap.add_argument("--fit", choices=["auto", "crop", "top", "bottom", "blur", "solid"],
                     default="auto", help="как горизонтальный кадр становится вертикальным")
     ap.add_argument("--cuts", default=None, help="карта катов work/cuts.json")
-    ap.add_argument("--look", choices=sorted(LOOK), default="rich",
-                    help="обработка картинки: насыщенность, тени, резкость")
+    ap.add_argument("--look", choices=sorted(LOOK), default="alive",
+                    help="обработка картинки. Дефолт alive: поднимает ЦВЕТ и "
+                         "не трогает тон (слово владельца 2026-08-23). "
+                         "rich отменён, оставлен для пересборки старых выпусков")
+    ap.add_argument("--grade", default=None,
+                    help="готовая цепочка фильтров вместо профиля --look; "
+                         "её считает grade_match.py по референс-фотографии. "
+                         "Задана — --look игнорируется (два грейда подряд "
+                         "накладываются и дают перекрут)")
     ap.add_argument("--quality", choices=sorted(QUALITY), default="high",
                     help="профиль экспорта")
     a = ap.parse_args()
@@ -192,12 +296,16 @@ def main():
 
     filt += src_v
     if a.hdr:
-        filt += config.TONEMAP + ","    # ГЕЙТ: тонмап первым
+        filt += config.tonemap(a.npl) + ","    # ГЕЙТ: тонмап первым
+        print(f"тонмап: npl={a.npl or config.NPL_DEFAULT}, desat=2")
     filt += f"fps={config.FPS}[pre];[pre]" + fit_chain(a.video, a.fit)
     # грейд ПОСЛЕ кадрирования и ДО плашек: шарпить готовую плашку нельзя —
     # у неё появится каёмка, и текст станет грязным
-    if LOOK[a.look]:
-        filt += "," + LOOK[a.look]
+    grade = a.grade if a.grade else LOOK[a.look]
+    if a.grade:
+        print("грейд: цепочка из замера (--look %s не применяется)" % a.look)
+    if grade:
+        filt += "," + grade
     filt += "[base]"
     last = "base"
     if a.overlay:
@@ -230,7 +338,8 @@ def main():
     ]
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     subprocess.run(cmd, check=True)
-    print(f"{a.out}: собран (картинка {a.look}, качество {a.quality} crf {crf}).")
+    look_name = "замер по референсу" if a.grade else a.look
+    print(f"{a.out}: собран (картинка {look_name}, качество {a.quality} crf {crf}).")
     print("Дальше обязательно qa.py — гейты не пропускать.")
 
 
