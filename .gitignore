@@ -13,6 +13,9 @@ assets/*
 !assets/music/
 assets/music/*
 !assets/music/licenses.md
+!assets/sfx/
+assets/sfx/*
+!assets/sfx/licenses.md
 
 # --- модели распознавания речи (сотни МБ) ---
 tools/models/

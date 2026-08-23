@@ -42,11 +42,18 @@ def probe_duration(path):
 
 def grab(path, t, out):
     """Кадр на секунде t. -ss до -i — быстрый seek, для контактного листа
-    его точности хватает; пофреймовая точность нужна обложке, не обзору."""
-    subprocess.run(
+    его точности хватает; пофреймовая точность нужна обложке, не обзору.
+
+    Возвращает True, если кадр получен. Не падает: у самого конца файла
+    быстрый seek может уехать за последний кадр и ffmpeg вернёт пустоту —
+    ронять из-за этого весь лист нельзя. Один пропущенный кадр стоит
+    дешевле, чем отсутствующий контактный лист (поймано 2026-08-23 на
+    просмотре: семь листов из четырнадцати не собрались именно так)."""
+    r = subprocess.run(
         [config.FFMPEG, "-hide_banner", "-loglevel", "error", "-ss", f"{t:.3f}",
          "-i", path, "-frames:v", "1", "-q:v", "2", "-y", out],
-        check=True)
+        capture_output=True)
+    return r.returncode == 0 and os.path.exists(out)
 
 
 def draw_safe(im, scale):
@@ -139,12 +146,17 @@ def main():
         dur = probe_duration(a.src)
         t1 = a.t1 if a.t1 is not None else dur
         os.makedirs(work, exist_ok=True)
-        # первый кадр берём почти с нуля: хук судится по нему
+        # первый кадр берём почти с нуля: хук судится по нему.
+        # От конца отступаем 0.3 с, а не 0.05: быстрый seek у самого хвоста
+        # промахивается мимо последнего кадра.
+        last = max(0.0, t1 - 0.3)
         step = (t1 - a.t0) / max(1, a.count - 1)
         for i in range(a.count):
-            t = min(a.t0 + i * step, max(0.0, t1 - 0.05))
+            t = min(a.t0 + i * step, last)
             p = os.path.join(work, f"{i:02d}.jpg")
-            grab(a.src, t, p)
+            if not grab(a.src, t, p):
+                print(f"кадр {t:.1f} с не снялся — пропускаю", file=sys.stderr)
+                continue
             frames.append((f"{t:.1f}s", Image.open(p).convert("RGB")))
 
     if not frames:
