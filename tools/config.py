@@ -40,18 +40,24 @@ FFPROBE = _find("ffprobe")
 # ─── кадр ─────────────────────────────────────────────────────────────────
 FRAME_W, FRAME_H, FPS = 1080, 1920, 30
 
-# ─── цвета (RGBA) — фирменный стиль M4ksi, craft/design-system ────────────
-# Снято 2026-08-23 замером с макетов maksi/social-mockups/ — это бренд
-# компании. Графит+синий из канона видео-цеха — ДРУГОЙ бренд (личный,
-# danny-content), у нас не используется.
-INK = (0, 0, 0, 242)              # #000000 при ~95% — фон и тело плашки
-WHITE = (255, 255, 255, 255)
-CREAM = (247, 241, 233, 255)      # #f7f1e9 — знак и крупный заголовок
-SOFT = (255, 255, 255, 217)       # вторичный текст
-HAIRLINE = (255, 255, 255, 40)    # волосяная линия 2px по верху панели
-ACCENT = (217, 250, 3, 255)       # #d9fa03 — лайм, единственный акцент
-ACCENT_VIDEO = ACCENT             # в видео тот же: лайм 4:2:0 не бледнит
-ACCENT_COVER = ACCENT
+# ─── цвета — из палитры, НЕ зашиты ───────────────────────────────────────
+# Окончательный дизайн не выбран (владелец 2026-08-23): живут две палитры —
+# ink-lime (владельца) и blue-white (Нурса). Код обязан работать с любой.
+# Переключение: переменная окружения ALYA_PALETTE или флаг --palette.
+# Смотреть все: python palette.py
+import palette as _pal
+
+PALETTE = _pal.load()
+BG = _pal.rgba(PALETTE["bg"])
+PLATE = _pal.rgba(PALETTE["plate"], PALETTE["plate_opacity"])
+WHITE = _pal.rgba(PALETTE["text"])
+SOFT = _pal.rgba(PALETTE["text_soft"])
+HEADING = _pal.rgba(PALETTE["heading"])
+ACCENT = _pal.rgba(PALETTE["accent"])
+HAIRLINE = _pal.rgba(PALETTE["hairline"])
+# на статичной обложке акцент может отличаться (у синей палитры — отличается,
+# потому что h264 4:2:0 бледнит синий, а jpg нет)
+ACCENT_STILL = _pal.rgba(PALETTE.get("accent_still", PALETTE["accent"]))
 
 # ─── типографика ──────────────────────────────────────────────────────────
 KICKER_LETTERSPACING = 0.22   # em, Inter-SemiBold, PIL рисует по-символьно

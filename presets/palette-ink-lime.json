@@ -1,0 +1,16 @@
+{
+  "name": "ink-lime",
+  "human": "Чёрный с лаймом",
+  "author": "владелец",
+  "status": "кандидат",
+  "source": "замер макетов maksi/social-mockups/ (логотип, аватар, лента feed-01), 2026-08-23",
+  "bg":        "#000000",
+  "plate":     "#000000",
+  "plate_opacity": 0.95,
+  "text":      "#ffffff",
+  "text_soft": "#ffffffd9",
+  "heading":   "#f7f1e9",
+  "accent":    "#d9fa03",
+  "hairline":  "#ffffff28",
+  "note": "Лайм проходит сжатие h264 4:2:0 спокойно — пред-насыщать не нужно."
+}

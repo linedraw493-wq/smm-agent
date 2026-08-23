@@ -1,0 +1,17 @@
+{
+  "name": "blue-white",
+  "human": "Синий с белым",
+  "author": "Нурс",
+  "status": "кандидат",
+  "source": "канон видео-цеха maksi/.../processes/video-station.md + video-pipeline/config.py, 2026-07",
+  "bg":        "#0a1929",
+  "plate":     "#0a1929",
+  "plate_opacity": 0.95,
+  "text":      "#ffffff",
+  "text_soft": "#ffffffd9",
+  "heading":   "#ffffff",
+  "accent":    "#5f9bff",
+  "accent_still": "#74a6ff",
+  "hairline":  "#ffffff28",
+  "note": "Два синих намеренно: в видео #5f9bff пред-насыщен, потому что h264 4:2:0 бледнит насыщенный синий; на статичной обложке #74a6ff."
+}
