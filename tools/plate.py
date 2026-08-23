@@ -13,6 +13,15 @@
     python plate.py --layout lower --kicker "M4KSI" --text "ИИ-агенты для бизнеса" \
         -o work/lower.png
 
+    # кадр карусели под пост: заголовок на своей подложке, 4:5
+    python plate.py --layout card --size 1080x1350 --kicker "КЕЙС" \
+        --text "Он не написал текст. Он нарисовал систему." \
+        --note "шахматная школа — воронка продаж" -o out/slide-1.jpg
+
+    # кадр карусели со скриншотом внутри
+    python plate.py --layout shot --size 1080x1350 --image raw/voronka.png \
+        --kicker "ВОРОНКА" --text "Где мы теряем деньги" -o out/slide-2.jpg
+
 Почему один модуль на всё: правило ремесла — стиль живёт в коде рендерера,
 а не в описании. Переписывать его «из прозы» под каждую поверхность значит
 терять грид-safe, отступы и иерархию. Это повторная грабля канона цеха.
@@ -122,9 +131,10 @@ def grab_frame(video, at, hdr, out_png):
 
 # ─── раскладки ────────────────────────────────────────────────────────────
 
-def layout_cover(p, base, kicker, text):
+def layout_cover(p, base, kicker, text, W=None, H=None):
     """Обложка: кикер + герой в грид-безопасной зоне, на плотной панели."""
-    W, H = config.FRAME_W, config.FRAME_H
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
     img = base.resize((W, H)).convert("RGBA") if base else \
         Image.new("RGBA", (W, H), pal.rgba(p["bg"]))
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -156,9 +166,10 @@ def layout_cover(p, base, kicker, text):
     return Image.alpha_composite(img, lay), plate_rgba, pal.rgba(p["heading"])
 
 
-def layout_plate(p, kicker, text, y_center):
+def layout_plate(p, kicker, text, y_center, W=None, H=None):
     """Плашка поверх видео: прозрачный PNG на весь кадр."""
-    W, H = config.FRAME_W, config.FRAME_H
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(lay)
     f, lines = fit_size(d, text, config.INTER_XB, W - 240, 420, 78)
@@ -187,10 +198,116 @@ def layout_plate(p, kicker, text, y_center):
     return lay, plate_rgba, pal.rgba(p["text"])
 
 
-def layout_lower(p, kicker, text):
+def layout_lower(p, kicker, text, W=None, H=None):
     """Нижняя треть — над зоной интерфейса площадки."""
-    y = int(config.FRAME_H * (1 - SAFE_BOTTOM) - 210)
-    return layout_plate(p, kicker, text, y)
+    H = H or config.FRAME_H
+    y = int(H * (1 - SAFE_BOTTOM) - 210)
+    return layout_plate(p, kicker, text, y, W, H)
+
+
+def layout_card(p, kicker, text, note, W=None, H=None):
+    """Кадр карусели: заголовок на плотном фоне, без видео под ним.
+
+    Отличается от `cover` тем, что снизу есть место под подпись и марку —
+    в карусели кадр читают дольше, чем обложку в ленте, и одной фразы мало.
+    """
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
+    img = Image.new("RGBA", (W, H), pal.rgba(p["bg"]))
+    d = ImageDraw.Draw(img)
+
+    pad = int(W * 0.085)
+    box_w = W - pad * 2
+    f_kick = font(config.INTER_SB, max(26, int(W / 32)))
+    f_note = font(config.INTER_RG, max(22, int(W / 40)))
+    mark_h = int(f_note.size * 2.4)
+
+    y = pad
+    if kicker:
+        draw_spaced(d, (pad, y), kicker.upper(), f_kick,
+                    pal.rgba(p["accent"]), config.KICKER_LETTERSPACING)
+        y += int(f_kick.size * 2.4)
+
+    note_lines = wrap(d, note, f_note, box_w) if note else []
+    note_h = int(len(note_lines) * f_note.size * 1.35)
+    top, bottom = y, H - pad - mark_h - int(H * 0.02)
+    rule_h = int(f_note.size * 1.6) + 4 if note_lines else 0
+    room = (bottom - top) - note_h - rule_h
+    f_hero, lines = fit_size(d, text, config.PF_SB, box_w, room, int(W / 9))
+
+    # блок ставится чуть выше геометрического центра: снизу марка, и
+    # оптический центр кадра выше середины — иначе низ проваливается
+    block_h = int(len(lines) * f_hero.size * 1.16) + note_h + rule_h
+    y = top + max(0, int((bottom - top - block_h) * 0.38))
+
+    for ln in lines:
+        d.text((pad, y), ln, font=f_hero, fill=pal.rgba(p["heading"]))
+        y += f_hero.size * 1.16
+
+    if note_lines:
+        y += int(f_hero.size * 0.34)
+        d.rectangle([pad, y, pad + int(W * 0.12), y + 4],
+                    fill=pal.rgba(p["accent"]))
+        y += int(f_note.size * 1.6)
+        for ln in note_lines:
+            d.text((pad, y), ln, font=f_note, fill=pal.rgba(p["text_soft"]))
+            y += f_note.size * 1.35
+
+    d.rectangle([pad, H - pad - mark_h, W - pad, H - pad - mark_h + 1],
+                fill=pal.rgba(p["hairline"]))
+    draw_spaced(d, (pad, H - pad - int(mark_h * 0.5)), "M4KSI", f_note,
+                pal.rgba(p["text_soft"]), config.KICKER_LETTERSPACING)
+    return img, pal.rgba(p["bg"]), pal.rgba(p["heading"])
+
+
+def layout_shot(p, shot_path, kicker, text, note, W=None, H=None):
+    """Кадр карусели со скриншотом: заголовок сверху, снимок экрана в рамке.
+
+    Скриншот вписывается целиком (не кропается): в нём смысл, а обрезанная
+    схема бесполезна. Пустое место по бокам добирается фоном палитры.
+    """
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
+    if not os.path.exists(shot_path):
+        sys.exit("нет файла скриншота: %s" % shot_path)
+    img = Image.new("RGBA", (W, H), pal.rgba(p["bg"]))
+    d = ImageDraw.Draw(img)
+
+    pad = int(W * 0.085)
+    box_w = W - pad * 2
+    f_kick = font(config.INTER_SB, max(26, int(W / 34)))
+    f_head = font(config.INTER_XB, max(30, int(W / 22)))
+    f_note = font(config.INTER_RG, max(22, int(W / 42)))
+
+    y = pad
+    if kicker:
+        draw_spaced(d, (pad, y), kicker.upper(), f_kick,
+                    pal.rgba(p["accent"]), config.KICKER_LETTERSPACING)
+        y += int(f_kick.size * 2.2)
+    head_lines = wrap(d, text, f_head, box_w) if text else []
+    for ln in head_lines:
+        d.text((pad, y), ln, font=f_head, fill=pal.rgba(p["heading"]))
+        y += int(f_head.size * 1.18)
+    y += int(pad * 0.5)
+
+    note_lines = wrap(d, note, f_note, box_w) if note else []
+    note_h = int(len(note_lines) * f_note.size * 1.35) + (pad if note_lines else 0)
+    frame_h = H - y - pad - note_h
+    shot = Image.open(shot_path).convert("RGB")
+    k = min(box_w / shot.width, frame_h / shot.height)
+    sw, sh = int(shot.width * k), int(shot.height * k)
+    shot = shot.resize((sw, sh), Image.LANCZOS)
+    sx, sy = (W - sw) // 2, y + (frame_h - sh) // 2
+    img.paste(shot, (sx, sy))
+    d.rectangle([sx - 1, sy - 1, sx + sw, sy + sh],
+                outline=pal.rgba(p["hairline"]), width=2)
+
+    if note_lines:
+        ny = y + frame_h + int(pad * 0.4)
+        for ln in note_lines:
+            d.text((pad, ny), ln, font=f_note, fill=pal.rgba(p["text_soft"]))
+            ny += f_note.size * 1.35
+    return img, pal.rgba(p["bg"]), pal.rgba(p["heading"])
 
 
 # ─── проверка сетки ───────────────────────────────────────────────────────
@@ -205,7 +322,8 @@ def grid_note(img):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--layout", choices=["cover", "plate", "lower"], required=True)
+    ap.add_argument("--layout", choices=["cover", "plate", "lower", "card", "shot"],
+                    required=True)
     ap.add_argument("--text", required=True)
     ap.add_argument("--kicker", default=None)
     ap.add_argument("-o", "--out", required=True)
@@ -214,28 +332,54 @@ def main():
     ap.add_argument("--hdr", action="store_true", help="исходник HLG/HDR")
     ap.add_argument("--y", type=int, default=None, help="центр плашки по вертикали")
     ap.add_argument("--palette", default=None)
+    ap.add_argument("--size", default=None, metavar="ШxВ",
+                    help="холст, по умолчанию 1080x1920; карусель — 1080x1350")
+    ap.add_argument("--image", default=None, help="скриншот для раскладки shot")
+    ap.add_argument("--note", default=None, help="подпись под заголовком")
     a = ap.parse_args()
+
+    W = H = None
+    if a.size:
+        try:
+            W, H = (int(v) for v in a.size.lower().replace("х", "x").split("x"))
+        except ValueError:
+            sys.exit("--size пишется как 1080x1350")
 
     p = pal.load(a.palette)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
 
-    if a.layout == "cover":
+    if a.layout in ("card", "shot"):
+        if a.layout == "shot":
+            if not a.image:
+                sys.exit("раскладке shot нужен --image со скриншотом")
+            img, plate_c, text_c = layout_shot(p, a.image, a.kicker, a.text,
+                                               a.note, W, H)
+        else:
+            img, plate_c, text_c = layout_card(p, a.kicker, a.text, a.note, W, H)
+        img = img.convert("RGB")
+        if a.out.lower().endswith((".jpg", ".jpeg")):
+            img.save(a.out, quality=95, subsampling=0)
+        else:
+            img.save(a.out)
+        note, box = grid_note(img)
+        print("  " + note)
+    elif a.layout == "cover":
         base = None
         if a.frame:
             tmp = os.path.splitext(a.out)[0] + "-frame.png"
             base = grab_frame(a.frame, a.at, a.hdr, tmp)
             os.remove(tmp)
-        img, plate_c, text_c = layout_cover(p, base, a.kicker, a.text)
+        img, plate_c, text_c = layout_cover(p, base, a.kicker, a.text, W, H)
         img = img.convert("RGB")
         img.save(a.out, quality=94) if a.out.lower().endswith((".jpg", ".jpeg")) \
             else img.save(a.out)
         note, box = grid_note(img)
         print("  " + note)
     else:
-        y = a.y if a.y is not None else int(config.FRAME_H * 0.5)
-        img, plate_c, text_c = (layout_lower(p, a.kicker, a.text)
+        y = a.y if a.y is not None else int((H or config.FRAME_H) * 0.5)
+        img, plate_c, text_c = (layout_lower(p, a.kicker, a.text, W, H)
                                 if a.layout == "lower"
-                                else layout_plate(p, a.kicker, a.text, y))
+                                else layout_plate(p, a.kicker, a.text, y, W, H))
         img.save(a.out)
 
     ratio = contrast(text_c[:3], plate_c[:3])

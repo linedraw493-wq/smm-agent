@@ -21,14 +21,25 @@ if ($ff) {
 
 if (Get-Command ffprobe -ErrorAction SilentlyContinue) { Ok "ffprobe" } else { Bad "ffprobe не найден" }
 
-$py = (Get-Command python -ErrorAction SilentlyContinue)
-if ($py) {
-  Ok "python: $(& python --version)"
+# Интерпретатор ищется через launcher: `python` в PATH бывает перебит
+# заглушкой Microsoft Store, которая молча ничего не запускает. Стек стоит
+# на 3.12 — её и спрашиваем первой, PATH только запасной.
+$pyExe = $null
+if (Get-Command py -ErrorAction SilentlyContinue) {
+  & py -3.12 -c "import sys" 2>$null
+  if ($LASTEXITCODE -eq 0) { $pyExe = @("py", "-3.12") }
+}
+if (-not $pyExe -and (Get-Command python -ErrorAction SilentlyContinue)) {
+  & python -c "import sys" 2>$null
+  if ($LASTEXITCODE -eq 0) { $pyExe = @("python") }
+}
+if ($pyExe) {
+  Ok "python: $(& $pyExe[0] $pyExe[1..($pyExe.Length-1)] --version)  [$($pyExe -join ' ')]"
   foreach ($m in @("faster_whisper","pysubs2","PIL","numpy")) {
-    & python -c "import $m" 2>$null
+    & $pyExe[0] $pyExe[1..($pyExe.Length-1)] -c "import $m" 2>$null
     if ($LASTEXITCODE -eq 0) { Ok "пакет $m" } else { Bad "пакет $m не стоит" }
   }
-} else { Bad "python не найден" }
+} else { Bad "рабочий python не найден: ни py -3.12, ни python" }
 
 if (Get-Command yt-dlp -ErrorAction SilentlyContinue) { Ok "yt-dlp" } else { Warn "yt-dlp нет (нужен только для референсов)" }
 
