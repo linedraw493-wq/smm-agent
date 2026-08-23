@@ -50,6 +50,14 @@ foreach ($f in @("Inter-Regular.ttf","Inter-SemiBold.ttf","Inter-ExtraBold.ttf",
   else { Bad "шрифт $f нет — плашки и субтитры не отрисуются" }
 }
 
+Write-Host "--- Telegram (только чтение) ---"
+& python -c "import telethon" 2>$null
+if ($LASTEXITCODE -eq 0) { Ok "telethon" } else { Warn "telethon нет — Telegram недоступен" }
+if (Test-Path "C:/Claude/jabjik/tools/tg-reader/read.py") { Ok "читатель Кота на месте" }
+else { Warn "читателя нет — без него доступа к Telegram нет" }
+if (Test-Path "C:/Claude/jabjik/secrets/tg.session") { Ok "сессия владельца есть, вход не нужен" }
+else { Warn "сессии нет — вход выполняет ВЛАДЕЛЕЦ сам, через login.py" }
+
 Write-Host ""
 if ($fail -gt 0) { Write-Host "НЕ ГОТОВО: $fail пункт(ов). Чинить, не собирать."; exit 1 }
 Write-Host "Стек готов."

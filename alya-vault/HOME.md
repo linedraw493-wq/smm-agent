@@ -54,6 +54,7 @@ related: [alya, status, backlog, sources]
 Продакшн: [[operations/sobrat-rils]] · [[operations/vybrat-katy]] ·
 [[operations/obrabotat-zvuk]] · [[operations/sdelat-suby]] ·
 [[operations/sdelat-oblozhku]].
+Источники: [[operations/chitat-telegram]] — Telegram владельца, только чтение.
 Разбор чужого: [[operations/razobrat-rolik]] · [[operations/razobrat-post]] ·
 [[operations/razobrat-dizayn]].
 Петля: [[operations/razvedka-trendov]] · [[operations/zakryt-vypusk]].
@@ -70,7 +71,8 @@ related: [alya, status, backlog, sources]
 [[decisions/2026-08-23-alya-avtonomnoe-obuchenie]] ·
 [[decisions/2026-08-23-alya-ruki-naruzhu]] ·
 [[decisions/2026-08-23-hranenie-i-segmentaciya]] ·
-[[decisions/2026-08-23-posty-ne-v-git]].
+[[decisions/2026-08-23-posty-ne-v-git]] ·
+[[decisions/2026-08-23-alya-telegram]].
 
 ## Что лежит не в vault
 
