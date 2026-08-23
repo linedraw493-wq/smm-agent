@@ -77,13 +77,20 @@ def main():
             print(f"{BAD} звук {ch} канал(а) — на телефоне заиграет в одно ухо")
             fails.append("моно")
         lufs, rms = measure_audio(a.video)
-        if len(rms) >= 2:
+        # на моно L/R сравнивать не с чем. Печатать тут «OK» — ложная
+        # зелёная галочка, а она хуже отсутствия проверки: гейт, который
+        # всегда зелёный, перестают читать
+        if ch != 2:
+            print("?    L/R не проверялись — дорожка не стерео")
+        elif len(rms) >= 2:
             d = abs(rms[0] - rms[1])
             if d <= config.LR_RMS_TOLERANCE_DB:
                 print(f"{OK} L/R сходятся (Δ {d:.2f} dB)")
             else:
                 print(f"{BAD} L/R расходятся на {d:.2f} dB — one-ear")
                 fails.append("L/R")
+        else:
+            print("?    L/R измерить не вышло")
         # 3 — громкость
         if lufs is None:
             print("?    громкость измерить не вышло")
