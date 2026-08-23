@@ -49,7 +49,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("video")
     ap.add_argument("--expect-duration", type=float, default=None)
+    ap.add_argument("--cuts", default=None,
+                    help="карта катов: ожидаемая длина берётся из неё")
     a = ap.parse_args()
+
+    # длину лучше читать из карты, чем вписывать руками: вписанное руками
+    # число — ещё один путь для ошибки, и он уже сработал при проверке
+    if a.cuts and a.expect_duration is None:
+        with open(a.cuts, encoding="utf-8-sig") as f:
+            a.expect_duration = json.load(f).get("out_duration")
 
     info = probe(a.video)
     v = next((s for s in info["streams"] if s["codec_type"] == "video"), None)

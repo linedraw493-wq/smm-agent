@@ -51,8 +51,9 @@ related: [alya, status, backlog, sources]
 
 Идея и текст: [[operations/pridumat-kryuchki]] · [[operations/napisat-scenariy]] ·
 [[operations/napisat-post]] · [[operations/otvetit-kommentarii]].
-Продакшн: [[operations/sobrat-rils]] · [[operations/obrabotat-zvuk]] ·
-[[operations/sdelat-suby]] · [[operations/sdelat-oblozhku]].
+Продакшн: [[operations/sobrat-rils]] · [[operations/vybrat-katy]] ·
+[[operations/obrabotat-zvuk]] · [[operations/sdelat-suby]] ·
+[[operations/sdelat-oblozhku]].
 Разбор чужого: [[operations/razobrat-rolik]] · [[operations/razobrat-post]] ·
 [[operations/razobrat-dizayn]].
 Петля: [[operations/razvedka-trendov]] · [[operations/zakryt-vypusk]].

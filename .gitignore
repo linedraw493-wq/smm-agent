@@ -3,9 +3,12 @@ projects/*/raw/
 projects/*/work/
 projects/*/out/
 
-# --- общие тяжёлые ассеты: дверь трекается, содержимое локально ---
+# --- общие тяжёлые ассеты: дверь и реестры трекаются, файлы локально ---
 assets/*
 !assets/README.md
+!assets/music/
+assets/music/*
+!assets/music/licenses.md
 
 # --- модели распознавания речи (сотни МБ) ---
 tools/models/
