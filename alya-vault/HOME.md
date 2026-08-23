@@ -69,7 +69,8 @@ related: [alya, status, backlog, sources]
 [[decisions/2026-08-23-alya-agent]] ·
 [[decisions/2026-08-23-alya-avtonomnoe-obuchenie]] ·
 [[decisions/2026-08-23-alya-ruki-naruzhu]] ·
-[[decisions/2026-08-23-hranenie-i-segmentaciya]].
+[[decisions/2026-08-23-hranenie-i-segmentaciya]] ·
+[[decisions/2026-08-23-posty-ne-v-git]].
 
 ## Что лежит не в vault
 

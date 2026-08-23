@@ -3,6 +3,10 @@ projects/*/raw/
 projects/*/work/
 projects/*/out/
 
+# --- тексты постов: отдаются владельцу файлом, в репозиторий не едут ---
+projects/*/posts.md
+projects/*/posts/
+
 # --- общие тяжёлые ассеты: дверь и реестры трекаются, файлы локально ---
 assets/*
 !assets/README.md
