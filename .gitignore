@@ -1,0 +1,34 @@
+# --- медиа выпусков: структура трекается, содержимое локально ---
+projects/*/raw/
+projects/*/work/
+projects/*/out/
+
+# --- общие тяжёлые ассеты: дверь трекается, содержимое локально ---
+assets/*
+!assets/README.md
+
+# --- модели распознавания речи (сотни МБ) ---
+tools/models/
+
+# --- секреты ---
+.env
+*.env
+!.env.example
+*.key
+*.pem
+secrets/
+
+# --- временное ---
+scratch/
+*.log
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- ОС / редакторы ---
+.DS_Store
+Thumbs.db
+.obsidian/
