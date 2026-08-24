@@ -33,8 +33,39 @@ import shot_match
 import shot_stats
 
 
+def parse_zoom(txt):
+    """'1.3' · '1.35t' · '1.4b' -> (кратность, якорь).
+
+    Панч-ин — это КРУПНОСТЬ, а не украшение. craft/montage: два соседних плана
+    не должны быть одной крупности, а если материала на смену нет — крупность
+    делается кропом. 1.2–1.4× читается, 1.1× не видно, выше 1.5× видно мыло.
+
+    Якорь нужен там, где кадр скомпонован плохо и это ЗНАЕШЬ: в нашем сырье
+    дорога из-за лобового отдаёт нижние 45 % кадра чёрному торпедо. Кроп по
+    центру заберёт поровну сверху и снизу, то есть выбросит половину неба и
+    оставит половину торпедо. Якорь 't' режет только снизу.
+    """
+    anchor = "c"
+    if txt and txt[-1] in "tbc":
+        anchor, txt = txt[-1], txt[:-1]
+    z = float(txt)
+    if z < 1.0:
+        sys.exit("панч-ин меньше 1.0 — это отъезд, его тут нет: " + txt)
+    if z > 1.5:
+        print("  ! панч-ин %.2f× — выше 1.5 видно мыло (craft/montage)" % z)
+    return z, anchor
+
+
+def zoom_chain(z, anchor):
+    if z <= 1.0:
+        return ""
+    y = {"t": "0", "b": "(ih-ih/%.4f)" % z, "c": "(ih-ih/%.4f)/2" % z}[anchor]
+    # AR сохраняется, поэтому выбор режима в fit_chain от кропа не меняется
+    return "crop=iw/%.4f:ih/%.4f:(iw-iw/%.4f)/2:%s" % (z, z, z, y)
+
+
 def parse_spec(spec):
-    """path · path@in:out · path@in:out:speed — кусок с подрезкой и скоростью.
+    """path · path@in:out · path@in:out:speed · path@in:out:speed:zoom.
 
     Подрезка делается ЗДЕСЬ, а не после склейки, и это принципиально: гнать
     через тонмап и масштаб две минуты, чтобы потом выкинуть полторы, —
@@ -53,20 +84,22 @@ def parse_spec(spec):
     предупредит: там каждый второй кадр окажется копией предыдущего.
     """
     if "@" not in spec:
-        return spec, None, None, 1.0
+        return spec, None, None, 1.0, (1.0, "c")
     path, _, rng = spec.rpartition("@")
     parts = rng.split(":")
     try:
         if len(parts) == 2:
-            return path, float(parts[0]), float(parts[1]), 1.0
-        if len(parts) == 3:
+            return path, float(parts[0]), float(parts[1]), 1.0, (1.0, "c")
+        if len(parts) in (3, 4):
             sp = float(parts[2])
             if sp <= 0:
                 sys.exit("скорость должна быть больше нуля: " + spec)
-            return path, float(parts[0]), float(parts[1]), sp
+            zm = parse_zoom(parts[3]) if len(parts) == 4 else (1.0, "c")
+            return path, float(parts[0]), float(parts[1]), sp, zm
     except ValueError:
         pass
-    sys.exit("не разобрала кусок: %s (жду path@начало:конец[:скорость])" % spec)
+    sys.exit("не разобрала кусок: %s "
+             "(жду path@начало:конец[:скорость[:панч]])" % spec)
 
 
 def src_fps(info):
@@ -110,6 +143,10 @@ def main():
     ap.add_argument("-o", "--out", required=True)
     ap.add_argument("--hdr", action="store_true",
                     help="источники HDR/HLG — тонмапить каждый перед склейкой")
+    ap.add_argument("--npl", type=int, default=None,
+                    help="порог тонмапа: НЕ константа, а параметр материала "
+                         "(craft/color). Подбирается свипом на самом светлом "
+                         "кадре, дефолт %d" % config.NPL_DEFAULT)
     ap.add_argument("--fit", default="auto",
                     choices=["auto", "crop", "top", "bottom", "blur", "solid"])
     ap.add_argument("--crf", type=int, default=16, help="качество промежутка")
@@ -119,13 +156,14 @@ def main():
                     help="выровнять куски друг под друга ДО общего вида: "
                          "телефон ставит баланс белого заново на каждую съёмку")
     ap.add_argument("--match-strength", type=float, default=shot_match.STRENGTH,
-                    help="насколько тянуть к среднему, 0..1 (по умолчанию 0.75)")
+                    help="насколько тянуть к среднему, 0..1 (по умолчанию %.2f)"
+                         % shot_match.STRENGTH)
     ap.add_argument("--xfade", type=float, default=0.0,
                     help="плавный переход между кусками, с (0 — встык)")
     a = ap.parse_args()
 
     specs = [parse_spec(x) for x in a.inputs]
-    for p, _, _, _ in specs:
+    for p, _, _, _, _ in specs:
         if not os.path.exists(p):
             sys.exit("нет файла: " + p)
 
@@ -135,7 +173,7 @@ def main():
     else:
         # звук берём только если он есть у ВСЕХ: concat с разным набором
         # дорожек молча роняет его у части кусков — искать потом замучаешься
-        auds = [has_audio(p) for p, _, _, _ in specs]
+        auds = [has_audio(p) for p, _, _, _, _ in specs]
         with_audio = all(auds)
         if any(auds) and not with_audio:
             print("! звук есть не у всех кусков — собираю без звука, "
@@ -147,9 +185,9 @@ def main():
     if a.match:
         print("замер кусков для выравнивания ...")
         measured = []
-        for p, t_in, t_out, _ in specs:
+        for p, t_in, t_out, _, _ in specs:
             seg = (t_in, t_out) if t_in is not None else None
-            st = shot_stats.stats_of(p, a.hdr, 5, seg)
+            st = shot_stats.stats_of(p, a.hdr, 5, seg, a.npl)
             if st is None:
                 sys.exit("не удалось замерить " + p)
             measured.append(st)
@@ -157,7 +195,7 @@ def main():
         print("  цель: яркость %.3f · насыщ %.3f · средние каналов "
               "R%.3f G%.3f B%.3f"
               % (tgt["яркость"], tgt["насыщ"], tgt["mR"], tgt["mG"], tgt["mB"]))
-        for i, (st, (p, _, _, _)) in enumerate(zip(measured, specs)):
+        for i, (st, (p, _, _, _, _)) in enumerate(zip(measured, specs)):
             chain, report, notes = shot_match.correction(st, tgt, a.match_strength)
             fixes[i] = chain
             print("  %s: %s" % (os.path.basename(p), report))
@@ -166,7 +204,7 @@ def main():
         print("")
 
     parts, labels, total, takes = [], [], 0.0, []
-    for i, (p, t_in, t_out, speed) in enumerate(specs):
+    for i, (p, t_in, t_out, speed, zoom) in enumerate(specs):
         info = probe(p)
         raw_take = info["dur"] if t_in is None else (t_out - t_in)
         take = raw_take / speed          # на экране кусок идёт СТОЛЬКО
@@ -185,6 +223,8 @@ def main():
         # знает build_reel.probe_size, её и печатаем
         dw, dh = build_reel.probe_size(p)
         sp_note = "" if speed == 1.0 else ("  %.2fx" % speed)
+        if zoom[0] > 1.0:
+            sp_note += "  панч %.2f×%s" % (zoom[0], zoom[1])
         print("%2d. %s  %dx%d%s  %s fps  %s  берём %.2f -> %.2f с%s"
               % (i + 1, os.path.basename(p), dw, dh,
                  " (повёрнут)" if (dw, dh) != (info["w"], info["h"]) else "",
@@ -199,11 +239,17 @@ def main():
             # растянутый поток и раскладывает кадры равномерно.
             chain += "setpts=PTS/%.6f," % speed
         if a.hdr:
-            chain += config.TONEMAP + ","
+            chain += config.tonemap(a.npl) + ","
         if fixes[i]:
             # покусковая правка стоит ПОСЛЕ тонмапа (мерили тонмапленное)
             # и ДО масштабирования — на полном кадре меньше видно полосы
             chain += fixes[i] + ","
+        zc = zoom_chain(*zoom)
+        if zc:
+            # панч-ин ДО вписывания в вертикаль: кроп сохраняет пропорции,
+            # значит режим fit от него не меняется, а масштабируется уже
+            # выбранная часть кадра — без двойного ресемплинга
+            chain += zc + ","
         chain += "fps=%d," % config.FPS
         chain += build_reel.fit_chain(p, a.fit)
         chain += ",setsar=1"
@@ -255,7 +301,7 @@ def main():
         parts.append("".join(labels) + "concat=n=%d:v=1:a=0[outv]" % n)
 
     cmd = [config.FFMPEG, "-y", "-hide_banner", "-loglevel", "error"]
-    for p, _, _, _ in specs:
+    for p, _, _, _, _ in specs:
         cmd += ["-i", p]
     cmd += ["-filter_complex", ";".join(parts), "-map", "[outv]"]
     if with_audio:

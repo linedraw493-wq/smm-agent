@@ -8,19 +8,6 @@ function Ok($m)  { Write-Host "OK   $m" }
 function Bad($m) { Write-Host "БРАК $m"; $script:fail++ }
 function Warn($m){ Write-Host "?    $m" }
 
-Write-Host "--- стек ---"
-$ff = (Get-Command ffmpeg -ErrorAction SilentlyContinue)
-if ($ff) {
-  Ok "ffmpeg: $($ff.Source)"
-  $filters = & ffmpeg -hide_banner -filters 2>$null
-  foreach ($n in @("ass","subtitles","drawtext","zscale","tonemap","loudnorm","afftdn","sidechaincompress")) {
-    if ($filters | Where-Object { $_ -match "\s$n\s" }) { Ok "фильтр $n" }
-    else { Bad "фильтр $n отсутствует — сборка не full" }
-  }
-} else { Bad "ffmpeg не найден. winget install Gyan.FFmpeg" }
-
-if (Get-Command ffprobe -ErrorAction SilentlyContinue) { Ok "ffprobe" } else { Bad "ffprobe не найден" }
-
 # Интерпретатор ищется через launcher: `python` в PATH бывает перебит
 # заглушкой Microsoft Store, которая молча ничего не запускает. Стек стоит
 # на 3.12 — её и спрашиваем первой, PATH только запасной.
@@ -40,6 +27,31 @@ if ($pyExe) {
     if ($LASTEXITCODE -eq 0) { Ok "пакет $m" } else { Bad "пакет $m не стоит" }
   }
 } else { Bad "рабочий python не найден: ни py -3.12, ни python" }
+
+# ffmpeg спрашиваем У КОНВЕЙЕРА, а не у PATH.
+#
+# Доктор врал с 2026-08-23 и врал в самую опасную сторону: печатал «БРАК
+# ffmpeg не найден» на полностью исправной машине и гнал чинить работающее.
+# Причина — он смотрел в PATH, а winget кладёт бинарь в свою папку пакета,
+# и находит его только config.py. Доктор обязан проверять тот же путь,
+# которым пойдёт сборка, иначе он проверяет не наш стек.
+Write-Host "--- стек ---"
+if ($pyExe) {
+  $tools = Join-Path $PSScriptRoot "."
+  $ffLine = & $pyExe[0] $pyExe[1..($pyExe.Length-1)] -c "import sys; sys.path.insert(0, r'$tools'); import config; print(config.FFMPEG); print(config.FFPROBE)"
+  $paths = @($ffLine -split "`r?`n" | Where-Object { $_ -ne "" })
+  $ffmpegPath = $paths[0]; $ffprobePath = $paths[1]
+  if ($ffmpegPath -and (Test-Path $ffmpegPath)) {
+    Ok "ffmpeg: $ffmpegPath"
+    $filters = & $ffmpegPath -hide_banner -filters 2>$null
+    foreach ($n in @("ass","subtitles","drawtext","zscale","tonemap","loudnorm","afftdn","sidechaincompress","selectivecolor","curves","vibrance","xfade")) {
+      if ($filters | Where-Object { $_ -match "\s$n\s" }) { Ok "фильтр $n" }
+      else { Bad "фильтр $n отсутствует — сборка не full" }
+    }
+  } else { Bad "ffmpeg не найден ни в PATH, ни в папке winget. winget install Gyan.FFmpeg" }
+  if ($ffprobePath -and (Test-Path $ffprobePath)) { Ok "ffprobe: $ffprobePath" }
+  else { Bad "ffprobe не найден" }
+} else { Bad "ffmpeg не проверен: сначала почини python, config.py читается им" }
 
 if (Get-Command yt-dlp -ErrorAction SilentlyContinue) { Ok "yt-dlp" } else { Warn "yt-dlp нет (нужен только для референсов)" }
 

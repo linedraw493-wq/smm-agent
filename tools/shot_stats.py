@@ -42,8 +42,11 @@ def _duration(path):
         return 0.0
 
 
-def stats_of(path, hdr, n, seg=None):
-    vf = (config.TONEMAP + ",") if hdr else ""
+def stats_of(path, hdr, n, seg=None, npl=None):
+    # npl обязан совпадать с тем, которым кусок будет тонмаплен на сборке:
+    # мерить при 400 и рендерить при 250 — значит выравнивать одно, а
+    # показывать другое. Пойман 2026-08-24, когда у join_clips появился --npl.
+    vf = (config.tonemap(npl) + ",") if hdr else ""
     if seg:
         a, b = seg
         dur = b - a
