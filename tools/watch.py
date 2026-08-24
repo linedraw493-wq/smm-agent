@@ -177,10 +177,38 @@ CARD = """---
 """
 
 
+def already_seen(url):
+    """Разобран ли этот ролик — по ССЫЛКЕ, а не по имени папки.
+
+    Ловушка поймана 2026-08-24 и закрыта 2026-08-25: имя папки собирается из
+    автора и заголовка, а в плоском списке YouTube поле автора то есть, то
+    пусто. Один и тот же ролик приезжал дважды — как `na-...` и как
+    `nate-herk-...`, как `powerful-...` и как `poweful-...`. Ссылка на ролик
+    в шапке карточки одна и та же всегда, по ней и сверяем.
+    """
+    if not os.path.isdir(CARDS):
+        return None
+    for p in sorted(glob.glob(os.path.join(CARDS, "*.md"))):
+        try:
+            with open(p, encoding="utf-8") as f:
+                head = f.read(600)
+        except OSError:
+            continue
+        if f"источник: {url}" in head:
+            return p
+    return None
+
+
 def one(url, author, title, lang, date):
     name = f"{date}-{slug(author, 20)}-{slug(title, 30)}"
     folder = os.path.join(REF, name)
     print(f"\n▸ {author} — {title}")
+
+    seen = already_seen(url)
+    if seen and os.path.basename(seen) != name + ".md":
+        print(f"  уже разобран под другим именем — пропускаю: "
+              f"{os.path.relpath(seen, REPO)}")
+        return None
 
     # Карточка, в которую уже писали глазами, не перезаписывается никогда.
     # Ловушка поймана 2026-08-23: `--channel -n 6` берёт СВЕЖИЕ ролики, а

@@ -3,8 +3,8 @@ type: index
 status: active
 sensitivity: normal
 scope: work
-updated: 2026-08-24
-tags: [home, index, alya, reelsmaker]
+updated: 2026-08-25
+tags: [home, index, alya]
 related: [alya, status, backlog, sources]
 ---
 
@@ -36,7 +36,8 @@ related: [alya, status, backlog, sources]
 
 - [[school/HOME]] — карта школы: что было не так и как учимся.
 - [[school/programma]] — семь кафедр и таблица состояния.
-- [[school/exams]] — чем закрывается каждая кафедра.
+  **Экзаменов нет** — отменены словом владельца 2026-08-23; кафедра растёт
+  разобранными роликами, а не сдачей.
 - [[school/corpus/README]] — эталоны в цифрах. **Пусто, ждёт списка владельца.**
 - [[school/razbor-2026-08-23-reel-v3]] — разбор своей работы, образец формы.
 
@@ -85,7 +86,7 @@ related: [alya, status, backlog, sources]
 
 ## Обучение — `trends/`
 
-Зона, куда Аля пишет сама, по расписанию. С 2026-08-23 без спроса она
+Зона, куда Аля пишет сама, без спроса. С 2026-08-23 без спроса она
 работает **по всему ремеслу** ([[decisions/2026-08-23-alya-polnyy-dostup]]);
 `trends/` остаётся местом, где живёт разбор чужого.
 [[trends/HOME]] · [[trends/watchlist]] · [[trends/platform-signals]] ·
@@ -109,7 +110,11 @@ related: [alya, status, backlog, sources]
 [[decisions/2026-08-23-alya-ruki-naruzhu]] ·
 [[decisions/2026-08-23-hranenie-i-segmentaciya]] ·
 [[decisions/2026-08-23-posty-ne-v-git]] ·
-[[decisions/2026-08-23-alya-telegram]].
+[[decisions/2026-08-23-alya-telegram]] ·
+[[decisions/2026-08-23-shkola-ali]] ·
+[[decisions/2026-08-24-vybor-palitry]] ·
+[[decisions/2026-08-25-uchyoba-bez-raspisaniya]] — **учёба без расписания** ·
+[[decisions/2026-08-25-muzyka-ploshchadki]] — **музыка от площадки**.
 
 ## Что лежит не в vault
 

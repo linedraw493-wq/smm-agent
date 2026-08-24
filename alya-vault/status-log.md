@@ -72,7 +72,8 @@ related: [status, HOME]
   `tools/teardown.py` сошёлся с ручным разбором цеха до десятых (−14.5 LUFS,
   LRA 2.1). `tools/grid_test.py`, `tools/ref_get.ps1`.
 - Модель хранения решена — [[decisions/2026-08-23-hranenie-i-segmentaciya]].
-- Vault открыт в Obsidian: волт зарегистрирован на корень `reelsmaker/`.
+- Vault открыт в Obsidian: волт зарегистрирован на корень папки Али
+  (тогда `reelsmaker/`, с 2026-08-24 — `m4ksi/alya/`).
 
 ## Проверка готовности 2026-08-23 — прогоном, не по записям
 
