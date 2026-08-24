@@ -12,7 +12,7 @@ related: [HOME, craft/video-station]
 
 ## Канон видео-цеха компании
 
-`C:/Claude/maksi/maksi-content-factory/` — выгрузка с агента Нурса, директора
+`C:/Claude/m4ksi/maksi/maksi-content-factory/` — выгрузка с агента Нурса, директора
 M4ksi (слово владельца 2026-08-23). Снято 2026-08-23. Что оттуда взято:
 
 | Источник | Что перенесено | Куда легло |

@@ -17,7 +17,7 @@ related:
 # Ремесло — видео: нормы, цепочки, гейты
 
 **Дистиллят, не первоисточник.** Перенесено 2026-08-23 из канона видео-цеха
-компании: `C:/Claude/maksi/maksi-content-factory/maksi-content-factory-vault/processes/video-station.md`
+компании: `C:/Claude/m4ksi/maksi/maksi-content-factory/maksi-content-factory-vault/processes/video-station.md`
 (там прогоны 2026-07, оригинальные формулировки и провенанс). Сюда подняты
 правила и цифры, подтверждённые прогоном, **плюс поправка на Windows** — там
 стек был macOS.

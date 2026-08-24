@@ -4,9 +4,10 @@
     python palette.py            — показать все палитры
     python palette.py ink-lime   — показать одну
 
-Окончательный дизайн НЕ выбран (владелец 2026-08-23): живут две палитры-
-кандидата, и код обязан работать с любой. Выбор палитры — параметр выпуска,
-а не константа. Зашьёшь одну в код — вторую придётся выковыривать отовсюду.
+Палитра выбрана 2026-08-24: `blue-white`. `ink-lime` не удалена — статус
+`отклонена`, живёт как история. Выбор всё ещё параметр выпуска
+(`--palette` / `ALYA_PALETTE`), а не жёстко зашит в модули — на случай
+пересмотра.
 """
 import glob
 import json
@@ -15,7 +16,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PRESETS = os.path.join(os.path.dirname(ROOT), "presets")
-DEFAULT = os.environ.get("ALYA_PALETTE", "ink-lime")
+DEFAULT = os.environ.get("ALYA_PALETTE", "blue-white")
 
 
 def names():

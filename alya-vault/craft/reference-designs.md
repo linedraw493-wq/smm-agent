@@ -19,7 +19,7 @@ related: [design-system, ../trends/teardowns/README, ../operations/razobrat-diza
 
 ## Свой эталон — уже существует, лежит в проектах компании
 
-`C:/Claude/maksi/social-mockups/` — **читать, не править**.
+`C:/Claude/m4ksi/maksi/social-mockups/` — **читать, не править**.
 
 | Папка | Что там | Чему учит |
 |---|---|---|
