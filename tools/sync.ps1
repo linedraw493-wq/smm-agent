@@ -29,6 +29,25 @@ if (-not $Message) {
 }
 
 & git -c core.safecrlf=false commit -q -m $Message
-& git push -q origin main
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "СТОП: коммит не прошёл. Ничего не выгружено."
+  exit 1
+}
+
+# git — не командлет: упавший push не бросает исключение, и
+# $ErrorActionPreference его не ловит. Без явной проверки кода возврата
+# скрипт печатал «выгружено» даже когда рвалось соединение с GitHub —
+# поймано 2026-08-25: push упал с «Connection reset», строка про успех
+# всё равно напечаталась, и сессия считала знание выгруженным, хотя на
+# remote его не было. Молчаливая ложь про выгрузку хуже самой ошибки.
+& git push origin main
+if ($LASTEXITCODE -ne 0) {
+  Write-Host ""
+  Write-Host "НЕ ВЫГРУЖЕНО: коммит сделан локально, push на GitHub не прошёл."
+  Write-Host "Коммит цел, работа не потеряна. Повторить: git push origin main"
+  & git log --oneline -1
+  exit 1
+}
+
 Write-Host "выгружено: $Message"
 & git log --oneline -1
