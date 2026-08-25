@@ -13,6 +13,14 @@ LRA, список склеек по секундам и среднюю длин�
 import argparse, json, re, subprocess, sys
 import config
 
+# Консоль PowerShell/Git Bash на этой машине в cp1251 — «×» в «478×854»
+# роняет print UnicodeEncodeError. Поймано 2026-08-25 на разборе сырья
+# projects/2026-08-25-m4ksi-den-osnovatelya. Переключаем stdout/stderr на
+# utf-8 c заменой нечитаемых символов вместо падения.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 
 def probe(path):
     r = subprocess.run(
