@@ -62,8 +62,17 @@ SPACE = {
 }
 
 
-def build(profile, space, rnnoise, lufs):
-    chain = ["highpass=f=85"]
+def build(profile, space, rnnoise, lufs, bass=0.0, headroom=0.0, comp=2.6):
+    chain = []
+
+    # Запас на входе. Запись с телефона часто приходит с пиками у самого нуля
+    # (интерсэмпл-пики выше 0 dBTP — обычное дело у AAC). Фильтры, работающие
+    # в зашкале, добавляют грязь, а подъём низа — сильнее всего. Понижение
+    # НЕ восстанавливает уже срезанное в записи, оно только не усугубляет.
+    if headroom:
+        chain.append("volume=%.2fdB" % -abs(headroom))
+
+    chain.append("highpass=f=85")
 
     if rnnoise and os.path.exists(rnnoise):
         bs = chr(92)
@@ -73,8 +82,27 @@ def build(profile, space, rnnoise, lufs):
         chain.append(DENOISE[profile])
 
     chain.append(EQ)
+
+    # «Больше низа» — узко и с оглядкой. Широкий подъём 80-200 Гц даёт не
+    # плотность, а бубнёж: полоса 200-500 («муть») лезет вперёд и голос
+    # закрывается. Поэтому грудь поднимается узко около 110 Гц, а муть в
+    # 300 Гц одновременно подрезается — тогда низ читается как опора, а не
+    # как гул. Мерить до и после — audio_report.py, полоса «низ 80-200»
+    # относительно «тело 500-2k».
+    if bass:
+        chain.append("equalizer=f=110:t=q:w=0.9:g=%.2f" % bass)
+        chain.append("equalizer=f=300:t=q:w=1.1:g=%.2f" % (-0.6 * bass))
     chain.append(DEESS)
-    chain.append("acompressor=threshold=-20dB:ratio=2.6:attack=8:release=180:makeup=2.5")
+
+    # Компрессор — не бесплатный. На записи, которую телефон уже придавил
+    # автогромкостью (LRA меньше ~3), ещё один слой сжатия не «усаживает
+    # плотнее», а душит: речь теряет остатки динамики и звучит как диктор
+    # автоответчика. Замер 2026-08-25 на этом выпуске: LRA записи 2.8, после
+    # дефолтного ratio 2.6 стало 1.5 при коридоре референсов 2.0-3.1.
+    # Поэтому степень сжатия — параметр, а не константа; 0 выключает совсем.
+    if comp > 0:
+        chain.append("acompressor=threshold=-20dB:ratio=%.2f:attack=8"
+                     ":release=180:makeup=%.2f" % (comp, 1.0 + 0.6 * (comp - 1.0)))
 
     if SPACE[space]:
         chain.append(SPACE[space])
@@ -95,10 +123,26 @@ def main():
     ap.add_argument("--space", choices=sorted(SPACE), default="room")
     ap.add_argument("--rnnoise", default=None)
     ap.add_argument("--lufs", type=float, default=config.LUFS_TARGET)
+    ap.add_argument("--bass", type=float, default=0.0,
+                    help="подъём груди голоса на 110 Гц, dB (узко, Q=0.9); "
+                         "одновременно подрезает муть 300 Гц на 0.6 от этого "
+                         "числа. Выше 3 dB на телефонной записи — бубнёж")
+    ap.add_argument("--headroom", type=float, default=0.0,
+                    help="понизить вход на N dB перед обработкой: нужно, если "
+                         "true peak записи у нуля или выше")
+    ap.add_argument("--comp", type=float, default=2.6,
+                    help="степень сжатия (ratio). 0 — без компрессора. На "
+                         "записи с LRA меньше 3 ставить 1.4-1.8, иначе речь "
+                         "душится: замер 2026-08-25 дал LRA 1.5 при 2.6")
     ap.add_argument("--dry", action="store_true")
     a = ap.parse_args()
 
-    chain = build(a.profile, a.space, a.rnnoise, a.lufs)
+    if a.bass > 3.0:
+        print("! --bass %.1f dB: выше 3 dB на моно-записи с телефона даёт "
+              "бубнёж, а не плотность (craft/audio)" % a.bass, file=sys.stderr)
+
+    chain = build(a.profile, a.space, a.rnnoise, a.lufs, a.bass, a.headroom,
+                  a.comp)
 
     if a.dry:
         print("профиль %s, пространство %s, цель %s LUFS\n" % (a.profile, a.space, a.lufs))
