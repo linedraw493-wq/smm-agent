@@ -63,6 +63,13 @@ related: [alya, status, backlog, sources]
 - [[craft/marketing]] — оффер, зритель, возражения, воронка, тесты.
 - [[craft/platform-specs]] — спеки, **безопасная зона**, громкость по площадкам.
 
+Заведено 2026-08-25 (расширение мастерской):
+
+- [[craft/kadr-elementy]] — **элементы кадра**: сплит экран+лицо, скриншот на
+  подложке, указатель, накопительный список, крупное число, цитата.
+- [[craft/ux-ui]] — **интерфейсы**: сетка 8, размеры, состояния, пустой экран.
+- [[craft/dokumenty]] — **документы**: медиакит, бриф, отчёт; форма и цвета на бумаге.
+
 ## Конвейер — `pipelines/`
 
 - [[pipelines/streams]] — стримы, что параллельно, чекпоинт, субагенты.
@@ -76,7 +83,8 @@ related: [alya, status, backlog, sources]
 [[operations/napisat-post]] · [[operations/otvetit-kommentarii]].
 Продакшн: [[operations/sobrat-rils]] · [[operations/vybrat-katy]] ·
 [[operations/obrabotat-zvuk]] · [[operations/sdelat-suby]] ·
-[[operations/sdelat-oblozhku]].
+[[operations/sdelat-oblozhku]] · [[operations/sobrat-kadr]].
+Документы и экраны: [[operations/sdelat-dokument]] · [[operations/sdelat-maket]].
 Источники: [[operations/chitat-telegram]] — Telegram владельца, только чтение.
 Разбор чужого: [[operations/razobrat-rolik]] · [[operations/razobrat-post]] ·
 [[operations/razobrat-dizayn]].
@@ -114,11 +122,14 @@ related: [alya, status, backlog, sources]
 [[decisions/2026-08-23-shkola-ali]] ·
 [[decisions/2026-08-24-vybor-palitry]] ·
 [[decisions/2026-08-25-uchyoba-bez-raspisaniya]] — **учёба без расписания** ·
-[[decisions/2026-08-25-muzyka-ploshchadki]] — **музыка от площадки**.
+[[decisions/2026-08-25-muzyka-ploshchadki]] — **музыка от площадки** ·
+[[decisions/2026-08-25-masterskaya-rasshirena]] — **мастерская: кадр, документы, интерфейсы**.
 
 ## Что лежит не в vault
 
-- `../tools/` — код, который исполняет ремесло.
+- `../tools/` — код, который исполняет ремесло. С 2026-08-25 плюс четыре
+  модуля: `fonts.py` (реестр шрифтов), `frame.py` (сплит, подложка,
+  указатель), `doc.py` (документы), `maket.py` (макеты экранов).
 - `../presets/` — стиль субтитров и пресеты сборки.
 - `../projects/` — выпуски: сценарий, сырьё, работа, готовое, `run.md`.
   Прогоны по видео на 2026-08-24: `2026-08-23-m4ksi-reels-01` (первый ролик,

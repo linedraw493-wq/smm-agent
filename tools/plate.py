@@ -260,6 +260,133 @@ def layout_card(p, kicker, text, note, W=None, H=None):
     return img, pal.rgba(p["bg"]), pal.rgba(p["heading"])
 
 
+def layout_quote(p, kicker, text, note, W=None, H=None):
+    """Цитата: крупный курсив с засечками, полоса слева, подпись снизу.
+
+    Зачем: слова клиента или довод в кадре читаются как чужая речь только
+    тогда, когда они оформлены не как наш текст. Один приём — один смысл.
+    """
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
+    img = Image.new("RGBA", (W, H), pal.rgba(p["bg"]))
+    d = ImageDraw.Draw(img)
+
+    pad = int(W * 0.1)
+    box_w = W - pad * 2 - int(W * 0.04)
+    f_note = font(config.INTER_RG, max(22, int(W / 40)))
+    f_kick = font(config.INTER_SB, max(26, int(W / 32)))
+
+    room = int(H * 0.46)
+    f_hero, lines = fit_size(d, "«" + text + "»", config.PF_IT, box_w, room,
+                             int(W / 8))
+    block_h = int(len(lines) * f_hero.size * 1.18)
+    y = int((H - block_h) * 0.42)
+
+    # полоса слева — метка чужой речи
+    d.rectangle([pad - int(W * 0.035), y, pad - int(W * 0.035) + 8,
+                 y + block_h], fill=pal.rgba(p["accent"]))
+
+    for ln in lines:
+        d.text((pad, y), ln, font=f_hero, fill=pal.rgba(p["heading"]))
+        y += f_hero.size * 1.18
+
+    if note:
+        y += int(f_hero.size * 0.5)
+        d.text((pad, y), "— " + note, font=f_note, fill=pal.rgba(p["text_soft"]))
+
+    if kicker:
+        draw_spaced(d, (pad, pad), kicker.upper(), f_kick,
+                    pal.rgba(p["accent"]), config.KICKER_LETTERSPACING)
+    return img, pal.rgba(p["bg"]), pal.rgba(p["heading"])
+
+
+def layout_list(p, kicker, items, upto, W=None, H=None):
+    """Накопительный список: пункты появляются по одному, прежние остаются.
+
+    `upto` — сколько пунктов показать в этом кадре. Рендерится N картинок
+    (upto=1..N), и они ставятся в монтаж подряд: список «дописывается» на
+    глазах. Это дешевле анимации и читается лучше, чем всё сразу.
+    """
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
+    img = Image.new("RGBA", (W, H), pal.rgba(p["bg"]))
+    d = ImageDraw.Draw(img)
+
+    pad = int(W * 0.085)
+    f_kick = font(config.INTER_SB, max(26, int(W / 32)))
+    f_item = font(config.INTER_SB, max(30, int(W / 18)))
+    f_dim = font(config.INTER_RG, max(30, int(W / 18)))
+
+    y = pad
+    if kicker:
+        draw_spaced(d, (pad, y), kicker.upper(), f_kick,
+                    pal.rgba(p["accent"]), config.KICKER_LETTERSPACING)
+        y += int(f_kick.size * 3.0)
+
+    step = int(f_item.size * 2.0)
+    # блок пунктов — по оптическому центру: низ кадра съедает интерфейс
+    block_h = step * len(items)
+    y = max(y, int((H - block_h) * 0.34))
+    for i, it in enumerate(items):
+        shown = i < upto
+        f = f_item if shown else f_dim
+        color = pal.rgba(p["text"]) if shown else pal.rgba(p["hairline"])
+        # маркер-пилюля с номером
+        r = int(f.size * 0.62)
+        cx, cy = pad + r, y + r
+        d.ellipse([cx - r, cy - r, cx + r, cy + r],
+                  fill=pal.rgba(p["accent"]) if shown else None,
+                  outline=pal.rgba(p["hairline"]), width=3)
+        if shown:
+            nf = font(config.INTER_XB, int(r * 1.1))
+            nw = d.textbbox((0, 0), str(i + 1), font=nf)[2]
+            d.text((cx - nw / 2, cy - r * 0.72), str(i + 1), font=nf,
+                   fill=pal.rgba(p["bg"]))
+        d.text((pad + r * 2 + int(W * 0.03), y + int(f.size * 0.08)),
+               it, font=f, fill=color)
+        y += step
+
+    return img, pal.rgba(p["bg"]), pal.rgba(p["text"])
+
+
+def layout_counter(p, kicker, number, note, W=None, H=None):
+    """Крупное число во весь кадр: результат, который должен остаться в памяти.
+
+    Правило дома: число только измеренное. Не мерено — этот вид не берём.
+    """
+    W = W or config.FRAME_W
+    H = H or config.FRAME_H
+    img = Image.new("RGBA", (W, H), pal.rgba(p["bg"]))
+    d = ImageDraw.Draw(img)
+
+    pad = int(W * 0.085)
+    f_kick = font(config.INTER_SB, max(26, int(W / 32)))
+    f_note = font(config.INTER_RG, max(26, int(W / 30)))
+
+    if kicker:
+        draw_spaced(d, (pad, pad), kicker.upper(), f_kick,
+                    pal.rgba(p["accent"]), config.KICKER_LETTERSPACING)
+
+    f_num, lines = fit_size(d, number, config.INTER_XB, W - pad * 2,
+                            int(H * 0.42), int(W / 2.2))
+    nh = int(len(lines) * f_num.size * 1.05)
+    y = int((H - nh) * 0.40)
+    for ln in lines:
+        lw = d.textbbox((0, 0), ln, font=f_num)[2]
+        d.text(((W - lw) / 2, y), ln, font=f_num, fill=pal.rgba(p["heading"]))
+        y += f_num.size * 1.05
+
+    if note:
+        note_lines = wrap(d, note, f_note, W - pad * 2)
+        y += int(f_num.size * 0.18)
+        for ln in note_lines:
+            lw = d.textbbox((0, 0), ln, font=f_note)[2]
+            d.text(((W - lw) / 2, y), ln, font=f_note,
+                   fill=pal.rgba(p["text_soft"]))
+            y += f_note.size * 1.35
+    return img, pal.rgba(p["bg"]), pal.rgba(p["heading"])
+
+
 def layout_shot(p, shot_path, kicker, text, note, W=None, H=None):
     """Кадр карусели со скриншотом: заголовок сверху, снимок экрана в рамке.
 
@@ -322,7 +449,9 @@ def grid_note(img):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--layout", choices=["cover", "plate", "lower", "card", "shot"],
+    ap.add_argument("--layout",
+                    choices=["cover", "plate", "lower", "card", "shot",
+                             "quote", "list", "counter"],
                     required=True)
     ap.add_argument("--text", required=True)
     ap.add_argument("--kicker", default=None)
@@ -336,6 +465,8 @@ def main():
                     help="холст, по умолчанию 1080x1920; карусель — 1080x1350")
     ap.add_argument("--image", default=None, help="скриншот для раскладки shot")
     ap.add_argument("--note", default=None, help="подпись под заголовком")
+    ap.add_argument("--upto", type=int, default=None,
+                    help="список: сколько пунктов показать (для накопления)")
     a = ap.parse_args()
 
     W = H = None
@@ -348,7 +479,24 @@ def main():
     p = pal.load(a.palette)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
 
-    if a.layout in ("card", "shot"):
+    if a.layout in ("quote", "list", "counter"):
+        if a.layout == "quote":
+            img, plate_c, text_c = layout_quote(p, a.kicker, a.text, a.note, W, H)
+        elif a.layout == "counter":
+            img, plate_c, text_c = layout_counter(p, a.kicker, a.text, a.note, W, H)
+        else:
+            # список: пункты через «;», --upto сколько показать в этом кадре
+            items = [i.strip() for i in a.text.split(";") if i.strip()]
+            upto = a.upto if a.upto is not None else len(items)
+            img, plate_c, text_c = layout_list(p, a.kicker, items, upto, W, H)
+        img = img.convert("RGB")
+        if a.out.lower().endswith((".jpg", ".jpeg")):
+            img.save(a.out, quality=95, subsampling=0)
+        else:
+            img.save(a.out)
+        note, box = grid_note(img)
+        print("  " + note)
+    elif a.layout in ("card", "shot"):
         if a.layout == "shot":
             if not a.image:
                 sys.exit("раскладке shot нужен --image со скриншотом")

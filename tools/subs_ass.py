@@ -85,10 +85,12 @@ def split_on_scenes(items, scenes, min_len=0.35):
     if not scenes:
         return items
     out = []
-    for s, e, text in items:
+    for item in items:
+        s, e, text = item[0], item[1], item[2]
+        card = item[3] if len(item) > 3 else None
         inner = [c for c in scenes if s + min_len < c < e - min_len]
         if not inner:
-            out.append((s, e, text))
+            out.append(item)
             continue
         bounds = [s] + inner + [e]
         words = text.split()
@@ -98,12 +100,16 @@ def split_on_scenes(items, scenes, min_len=0.35):
         for a, b in zip(bounds, bounds[1:]):
             take = max(1, int(round(len(words) * (b - a) / total)))
             part = words[idx:idx + take] or words[idx:idx + 1]
+            # словные тайминги режем той же долей — иначе караоке уедет
+            sub = card[idx:idx + len(part)] if card else None
             idx += len(part)
             if part:
-                made.append((a, b, " ".join(part)))
+                made.append((a, b, " ".join(part), sub))
         if idx < len(words) and made:
-            a, b, t = made[-1]
-            made[-1] = (a, b, t + " " + " ".join(words[idx:]))
+            a, b, t, sub = made[-1]
+            tail = card[idx:] if card else None
+            made[-1] = (a, b, t + " " + " ".join(words[idx:]),
+                        (sub or []) + (tail or []) if card else None)
         out.extend(made)
     return out
 
@@ -119,9 +125,37 @@ def emphasise(text, accent_ass, text_ass, wanted):
     for i, w in enumerate(words):
         bare = w.strip(".,!?:;«»\"'()").lower()
         if NUM.search(w) or bare in wanted:
-            words[i] = "{\\c" + accent_ass[:-1] + "&}" + w + "{\\c" + text_ass[:-1] + "&}"
+            # цвет ASS: &HAABBGGRR + закрывающий &. Раньше здесь стояло
+            # accent_ass[:-1] — последняя цифра красного канала срезалась,
+            # и цвет уезжал. Поймано 2026-08-25 на прогоне караоке.
+            words[i] = "{\\c" + accent_ass + "&}" + w + "{\\c" + text_ass + "&}"
             hit = True
     return " ".join(words), hit
+
+
+
+def karaoke(card, accent_ass, text_ass, fill=False):
+    r"""Слово подсвечивается ровно тогда, когда его произносят.
+
+    Приём снят с разбора чужих роликов 2026-08-23: у n8n и Riley Brown это
+    основной стиль субтитров, и он держит досмотр — глаз идёт за подсветкой.
+    Тайминги словные, они уже есть в words.json: `\k` в ASS считает время
+    в сотых долях секунды.
+
+    fill=True — под активным словом появляется заливка (у n8n основной приём),
+    иначе просто меняется цвет буквы.
+    """
+    out = []
+    for w in card:
+        dur = max(1, int(round((w["e"] - w["s"]) * 100)))
+        word = w["w"]
+        if fill:
+            # \kf — заливка «наплывом» слева направо
+            out.append("{\\kf%d\\c%s}%s" % (dur, accent_ass + "&", word))
+        else:
+            out.append("{\\k%d\\c%s}%s{\\c%s}"
+                       % (dur, accent_ass + "&", word, text_ass + "&"))
+    return " ".join(out)
 
 
 def ts(t):
@@ -152,6 +186,10 @@ def main():
     ap.add_argument("--accent", default="", help="слова через запятую")
     ap.add_argument("--font", default="Inter SemiBold")
     ap.add_argument("--size", type=int, default=74)
+    ap.add_argument("--karaoke", action="store_true",
+                    help="подсвечивать слово по мере произнесения")
+    ap.add_argument("--fill", action="store_true",
+                    help="заливка под активным словом (с --karaoke)")
     a = ap.parse_args()
 
     words = load_json(a.words)["words"]
@@ -170,7 +208,7 @@ def main():
             dropped += 1
             continue
         text = " ".join(w["w"] for w in card).replace("\n", " ").strip()
-        items.append((s, e, text))
+        items.append((s, e, text, card))
 
     scenes = scene_times(a.scenes) if a.scenes else []
     before = len(items)
@@ -178,10 +216,16 @@ def main():
 
     marginv = int(config.FRAME_H * config.SUBS_BOTTOM_SAFE) + 12
     lines, accented = [], 0
-    for s, e, text in items:
-        text, hit = emphasise(text, pal.ass(p["accent"]), pal.ass(p["text"]), wanted)
+    for item in items:
+        s, e, text = item[0], item[1], item[2]
+        card = item[3] if len(item) > 3 else None
+        if a.karaoke and card:
+            body = karaoke(card, pal.ass(p["accent"]), pal.ass(p["text"]), a.fill)
+            hit = False
+        else:
+            body, hit = emphasise(text, pal.ass(p["accent"]), pal.ass(p["text"]), wanted)
         accented += 1 if hit else 0
-        lines.append("Dialogue: 0,%s,%s,M4KSI,,0,0,,%s" % (ts(s), ts(e), text))
+        lines.append("Dialogue: 0,%s,%s,M4KSI,,0,0,,%s" % (ts(s), ts(e), body))
 
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     with open(out, "w", encoding="utf-8-sig") as f:
@@ -195,6 +239,9 @@ def main():
               % (len(scenes), len(items) - before))
     if accented:
         print("  акцентом выделено карт: %d" % accented)
+    if a.karaoke:
+        print("  караоке: слово подсвечивается по произнесению%s"
+              % (", с заливкой" if a.fill else ""))
 
 
 if __name__ == "__main__":
