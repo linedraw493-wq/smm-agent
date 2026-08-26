@@ -10,9 +10,17 @@
 пересмотра.
 """
 import glob
+import io
 import json
 import os
 import sys
+
+# Консоль Windows по умолчанию в cp1251, а в выводе есть стрелки и кириллица.
+# Без этого модуль падает с UnicodeEncodeError — та же болезнь, что чинили в
+# teardown.py 2026-08-25. Печать не должна зависеть от кодировки терминала.
+if hasattr(sys.stdout, "buffer"):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PRESETS = os.path.join(os.path.dirname(ROOT), "presets")
