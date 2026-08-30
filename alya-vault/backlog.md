@@ -3,7 +3,7 @@ type: registry
 status: active
 sensitivity: normal
 scope: work
-updated: 2026-08-26
+updated: 2026-08-30
 tags: [backlog, tails]
 related: [status, questions-vladelcu, HOME]
 ---
@@ -340,3 +340,4 @@ related: [status, questions-vladelcu, HOME]
   одного дубля (единственный способ дать ритм на непрерывной съёмке) сейчас
   делается вручную: сегменты + `concat`. Просится ключ вроде
   `--frames work/frames.json`.
+- **Кейс тендеров не сверен с Нурсом.** Ролик `2026-09-04-35-lotov` написан по снимку `m4ksi/maksi/`, свежему по 18.08. Перед выкладкой сверить состояние проекта с Нурсом — иначе рискуем назвать вслух то, что уже уехало.
