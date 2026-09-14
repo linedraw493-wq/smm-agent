@@ -162,4 +162,6 @@ Vault открывается в Obsidian: волт зарегистрирова�
 
 - Карта диска: `C:/Claude/CLAUDE.md`.
 - Голова Али: [[alya-vault/HOME|HOME]] · роль: [[alya-vault/alya|alya]].
-- Канон-источник: `C:/Claude/m4ksi/maksi/maksi-content-factory/`.
+- Канон-источник (усвоен, самого снимка на диске больше нет): архив
+  `linedraw493-wq/maksi-nurs-snapshot` на GitHub, папка была
+  `maksi-content-factory/`.
