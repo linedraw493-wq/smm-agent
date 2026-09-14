@@ -1,0 +1,644 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>M4ksi — агент по входящим обращениям</title>
+<style>
+@font-face{font-family:Inter;src:url('file:///C:/Claude/m4ksi/alya/assets/fonts/Inter-Regular.ttf');font-weight:400}
+@font-face{font-family:Inter;src:url('file:///C:/Claude/m4ksi/alya/assets/fonts/Inter-SemiBold.ttf');font-weight:600}
+@font-face{font-family:Inter;src:url('file:///C:/Claude/m4ksi/alya/assets/fonts/Inter-ExtraBold.ttf');font-weight:800}
+
+:root{
+  /* стол — тёплый уголь, не синий */
+  --deep:#0B0B0F; --deep2:#15151C; --onDeep:#F3F3F5; --onDeepSoft:#F3F3F5a6;
+  /* поверхность приложения — светлая */
+  --sur:#FFFFFF; --sur2:#F6F7F9; --sur3:#EFF0F3;
+  --line:#E7E8EC; --line2:#F0F1F4;
+  --tx:#0F1014; --tx2:#5C616E; --tx3:#9096A3;
+  /* один акцент */
+  --acc:#5A4BFF; --accSoft:#5A4BFF14; --accLine:#5A4BFF33;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+#stage{position:relative;width:1080px;height:1920px;background:var(--deep);overflow:hidden;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1}
+
+/* ───────── стол ───────── */
+#halo{position:absolute;left:50%;top:180px;width:1700px;height:1500px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(120,110,255,.20) 0%,rgba(90,75,255,.07) 34%,transparent 66%)}
+#halo2{position:absolute;left:50%;top:1780px;width:1500px;height:1100px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,255,255,.055) 0%,transparent 62%)}
+#mesh{position:absolute;inset:-60px;opacity:.55;
+  background-image:linear-gradient(#ffffff0d 1px,transparent 1px),linear-gradient(90deg,#ffffff0d 1px,transparent 1px);
+  background-size:120px 120px}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%,transparent 42%,rgba(0,0,0,.72) 100%)}
+#grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay}
+
+/* ───────── обвязка кадра ───────── */
+#kick{position:absolute;left:100px;top:288px;display:flex;align-items:center;gap:16px;
+  font-size:25px;font-weight:600;letter-spacing:.2em;color:var(--onDeepSoft);text-transform:uppercase}
+#kdot{width:10px;height:10px;border-radius:50%;background:var(--acc);
+  box-shadow:0 0 0 6px rgba(90,75,255,.18)}
+#capbar{position:absolute;left:100px;top:1524px;width:0;height:2px;background:var(--acc);opacity:0}
+#cap{position:absolute;left:100px;top:1550px;width:790px;font-size:35px;font-weight:600;
+  color:var(--onDeep);letter-spacing:-.01em;line-height:1.25}
+
+/* ───────── окно приложения ───────── */
+#app{position:absolute;left:100px;top:338px;width:770px;height:1124px;background:var(--sur);
+  border-radius:22px;overflow:hidden;transform-origin:50% 46%;
+  box-shadow:0 40px 90px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.35),0 0 0 1px #ffffff14}
+#rail{position:absolute;left:0;top:0;width:88px;height:1124px;background:var(--sur2);
+  border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;
+  padding-top:26px;gap:10px}
+.ico{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center}
+.ico.on{background:var(--acc)}
+.ico svg{width:23px;height:23px;fill:none;stroke:#8B90A0;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.ico.on svg{stroke:#fff}
+#brandmark{margin-bottom:16px;width:40px;height:40px;border-radius:12px;background:var(--tx);
+  color:#fff;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+#top{position:absolute;left:88px;top:0;width:682px;height:84px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;padding:0 26px;gap:14px}
+#crumb{font-size:23px;color:var(--tx3);font-weight:500}
+#crumb b{color:var(--tx);font-weight:600}
+#search{margin-left:auto;height:44px;width:196px;border:1px solid var(--line);border-radius:11px;
+  display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--tx3);font-size:19px}
+#ava{width:44px;height:44px;border-radius:50%;background:var(--sur3);color:var(--tx2);
+  font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+#view{position:absolute;left:88px;top:84px;width:682px;height:1040px;overflow:hidden}
+.pane{position:absolute;inset:0;padding:26px}
+
+/* ───────── общие детали ───────── */
+.h1{font-size:34px;font-weight:800;color:var(--tx);letter-spacing:-.02em}
+.lab{font-size:19px;font-weight:600;letter-spacing:.14em;color:var(--tx3);text-transform:uppercase}
+.card{background:var(--sur);border:1px solid var(--line);border-radius:16px}
+
+/* ───────── экран 1: задача ───────── */
+#p1{display:flex;flex-direction:column;justify-content:center;padding:26px 34px}
+#plan{margin-top:34px}
+.pl{display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--line2);
+  font-size:24px;color:var(--tx2)}
+.pl:first-child{border-top:0}
+.pl .bx{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none;
+  display:flex;align-items:center;justify-content:center}
+.pl.ok .bx{background:var(--acc);border-color:var(--acc)}
+.pl.ok{color:var(--tx)}
+.pl .bx svg{width:15px;height:15px;stroke:#fff;stroke-width:3;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.pl.ok .bx svg{opacity:1}
+#p1 .lab{margin-bottom:20px}
+#qbox{border:1px solid var(--line);border-radius:18px;padding:28px 26px;background:var(--sur2)}
+#qtext{font-size:38px;font-weight:600;color:var(--tx);line-height:1.32;letter-spacing:-.015em}
+#qcur{display:inline-block;width:3px;height:36px;background:var(--acc);vertical-align:-6px;margin-left:4px}
+#qrow{display:flex;align-items:center;gap:12px;margin-top:26px}
+.tag{border:1px solid var(--line);border-radius:999px;padding:11px 18px;font-size:20px;color:var(--tx2);
+  background:var(--sur)}
+#qsend{margin-left:auto;background:var(--acc);color:#fff;border-radius:12px;padding:13px 24px;
+  font-size:21px;font-weight:600}
+#qnote{margin-top:30px;font-size:22px;color:var(--tx3);display:flex;align-items:center;gap:12px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--acc)}
+
+/* ───────── экран 2-3: обращения ───────── */
+#kpis{display:flex;gap:14px;margin-bottom:22px}
+.kpi{flex:1;border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;background:var(--sur)}
+.kpi .t{font-size:17px;font-weight:600;letter-spacing:.1em;color:var(--tx3);text-transform:uppercase}
+.kpi .v{font-size:44px;font-weight:800;color:var(--tx);letter-spacing:-.03em;margin-top:8px;line-height:1}
+.kpi .u{font-size:20px;font-weight:600;color:var(--tx3);margin-left:4px}
+.kpi svg{display:block;margin-top:10px;width:100%;height:26px}
+#listhead{display:flex;align-items:center;margin-bottom:12px}
+#seg{margin-left:auto;display:flex;background:var(--sur3);border-radius:11px;padding:4px;gap:4px}
+.sg{font-size:19px;font-weight:600;color:var(--tx2);padding:9px 16px;border-radius:8px}
+.sg.on{background:var(--sur);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.msg{display:flex;align-items:center;gap:16px;padding:0 4px;overflow:hidden;
+  border-bottom:1px solid var(--line2)}
+.msg .av{width:52px;height:52px;border-radius:14px;background:var(--sur3);color:var(--tx2);
+  font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.msg .who{font-size:24px;font-weight:600;color:var(--tx);letter-spacing:-.01em}
+.msg .txt{font-size:21px;color:var(--tx2);margin-top:5px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:330px}
+.msg .rt{margin-left:auto;text-align:right;flex:none}
+.msg .tm{font-size:19px;color:var(--tx3)}
+.badge{margin-top:7px;font-size:17px;font-weight:600;border-radius:999px;padding:6px 12px;
+  border:1px solid var(--line);color:var(--tx3);white-space:nowrap}
+.badge.done{border-color:var(--accLine);color:var(--acc);background:var(--accSoft)}
+.badge.hot{border-color:var(--tx);color:#fff;background:var(--tx)}
+
+#sum{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:var(--sur2)}
+#sum .lab{margin-bottom:14px}
+.srow{display:flex;align-items:center;font-size:22px;color:var(--tx2);padding:9px 0;
+  border-top:1px solid var(--line)}
+.srow:first-of-type{border-top:0}
+.srow b{margin-left:auto;font-size:26px;font-weight:700;color:var(--tx)}
+
+/* ───────── экран 4: график ───────── */
+#chead{display:flex;align-items:flex-start;margin-bottom:6px}
+#cbig{font-size:52px;font-weight:800;letter-spacing:-.03em;color:var(--tx);line-height:1}
+#cdelta{font-size:20px;font-weight:600;color:var(--acc);margin-top:8px}
+#tip{position:absolute;background:var(--tx);color:#fff;border-radius:12px;padding:12px 16px;
+  box-shadow:0 12px 30px rgba(0,0,0,.28);white-space:nowrap}
+#tip .a{font-size:17px;color:#ffffff9c;letter-spacing:.06em}
+#tip .b{font-size:24px;font-weight:700;margin-top:3px}
+#legend{display:flex;gap:22px;margin-top:14px;font-size:19px;color:var(--tx2)}
+.lg{display:flex;align-items:center;gap:9px}
+.sw{width:14px;height:14px;border-radius:4px;background:var(--acc)}
+.sw.b{background:var(--sur3)}
+
+#facts{display:flex;gap:12px;margin-top:26px}
+.fact{flex:1;border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:var(--sur2)}
+.fact b{display:block;font-size:30px;font-weight:800;color:var(--tx);letter-spacing:-.02em}
+.fact span{display:block;margin-top:6px;font-size:18px;color:var(--tx3)}
+
+/* ───────── экран 5: база знаний ───────── */
+#gwrap{position:relative;width:630px;height:900px;margin-top:6px}
+.node{position:absolute;display:flex;align-items:center;gap:11px;background:var(--sur);
+  border:1px solid var(--line);border-radius:13px;padding:13px 17px;font-size:21px;font-weight:600;
+  color:var(--tx);box-shadow:0 6px 18px rgba(15,16,20,.07);white-space:nowrap;transform-origin:50% 50%}
+.node i{width:9px;height:9px;border-radius:3px;background:var(--tx3);display:block}
+.node.hot{border-color:var(--acc);box-shadow:0 10px 26px rgba(90,75,255,.22)}
+.node.hot i{background:var(--acc)}
+#hub{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:196px;height:196px;border-radius:50%;background:var(--tx);color:#fff;transform-origin:50% 50%}
+#hub .a{font-size:17px;letter-spacing:.18em;color:#ffffff8c}
+#hub .b{font-size:29px;font-weight:800;letter-spacing:-.01em;margin-top:5px}
+
+#gnote{position:absolute;left:0;bottom:26px;font-size:21px;color:var(--tx3)}
+
+/* ───────── экран 6: финал ───────── */
+#fin{position:absolute;left:0;top:0;width:1080px;height:1920px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center}
+#logo{width:520px}
+#finline{margin-top:52px;font-size:40px;font-weight:600;color:var(--onDeep);text-align:center;
+  line-height:1.32;letter-spacing:-.015em}
+#finsub{margin-top:20px;font-size:28px;color:var(--onDeepSoft);text-align:center}
+#fincta{margin-top:56px;font-size:23px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--onDeep);border:1px solid #ffffff2e;border-radius:999px;padding:18px 34px}
+
+/* ───────── курсор ───────── */
+#cursor{position:absolute;width:34px;height:34px;pointer-events:none;opacity:0}
+#ripple{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid var(--acc);opacity:0}
+</style>
+
+<div id="stage">
+  <div id="halo"></div><div id="halo2"></div><div id="mesh"></div>
+  <div id="vig"></div>
+  <svg id="grain"><filter id="gf"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3"/></filter>
+    <rect width="100%" height="100%" filter="url(#gf)"/></svg>
+
+  <div id="kick"><i id="kdot"></i><span>M4KSI · ИИ-агент</span></div>
+
+  <div id="app">
+    <div id="rail">
+      <div id="brandmark">m</div>
+      <div class="ico on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 12h5l2 5 4-10 2 5h5"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.4-3.6 4-5.4 7-5.4s5.6 1.8 7 5.4"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></div>
+    </div>
+
+    <div id="top">
+      <div id="crumb">Обращения / <b id="crumb2">Ночная смена</b></div>
+      <div id="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9096A3" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg><span>Поиск</span></div>
+      <div id="ava">ДС</div>
+    </div>
+
+    <div id="view">
+
+      <!-- 1. задача -->
+      <div class="pane" id="p1">
+        <div class="lab">Задача агенту</div>
+        <div id="qbox">
+          <div id="qtext"><span id="qs"></span><i id="qcur"></i></div>
+          <div id="qrow">
+            <div class="tag">за ночь</div><div class="tag">все каналы</div>
+            <div id="qsend">Запустить</div>
+          </div>
+        </div>
+        <div id="qnote"><i class="pulse" id="qpulse"></i><span id="qnotet">агент готов принять задачу</span></div>
+        <div id="plan"><div class="pl" id="pl0"><i class="bx"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>Отвечает на типовые вопросы</div><div class="pl" id="pl1"><i class="bx"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>Отбирает целевые обращения</div><div class="pl" id="pl2"><i class="bx"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></i>Готовит счета и сводку к утру</div></div>
+      </div>
+
+      <!-- 2-3. обращения -->
+      <div class="pane" id="p2">
+        <div id="kpis"></div>
+        <div id="listhead">
+          <div class="h1" id="lh">Ночные обращения</div>
+          <div id="seg"><div class="sg on" id="sg0">Все</div><div class="sg" id="sg1">Целевые</div></div>
+        </div>
+        <div id="msgs"></div>
+        <div id="sum"><div class="lab">Сводка к 09:00</div>
+          <div class="srow"><span>Ответов без участия человека</span><b>186</b></div>
+          <div class="srow"><span>Целевых передано менеджеру</span><b>38</b></div>
+          <div class="srow"><span>Счетов подготовлено</span><b>11</b></div></div>
+      </div>
+
+      <!-- 4. график -->
+      <div class="pane" id="p3">
+        <div id="chead">
+          <div><div class="lab">Обращения по часам</div>
+            <div id="cbig">0</div>
+            <div id="cdelta">за ночную смену</div></div>
+          <div style="margin-left:auto;text-align:right">
+            <div class="lab">Конверсия</div>
+            <div id="cbig2" style="font-size:52px;font-weight:800;letter-spacing:-.03em;color:var(--acc);line-height:1;margin-top:9px">0%</div>
+          </div>
+        </div>
+        <svg id="chart" width="630" height="620" viewBox="0 0 630 620"></svg>
+        <div id="facts">
+          <div class="fact"><b>03:00</b><span>пик нагрузки</span></div>
+          <div class="fact"><b>12 с</b><span>средний ответ</span></div>
+          <div class="fact"><b>87%</b><span>без участия человека</span></div>
+        </div>
+        <div id="legend">
+          <div class="lg"><i class="sw"></i>заявки</div>
+          <div class="lg"><i class="sw b"></i>обращения</div>
+        </div>
+        <div id="tip"><div class="a" id="tipa">03:00</div><div class="b" id="tipb">31 обращение</div></div>
+      </div>
+
+      <!-- 5. база знаний -->
+      <div class="pane" id="p4">
+        <div class="lab">Единая база знаний</div>
+        <div id="gwrap">
+          <svg id="links" width="630" height="900" viewBox="0 0 630 900"
+               style="position:absolute;left:0;top:0"></svg>
+          <div id="hub"><div class="a">LLM</div><div class="b">WIKI</div></div>
+        </div>
+        <div id="gnote">8 разделов · 1 240 документов · обновлено ночью</div>
+      </div>
+
+    </div>
+
+    <div id="ripple"></div>
+  </div>
+
+  <div id="cursor">
+    <svg viewBox="0 0 24 24" width="34" height="34">
+      <path d="M5 2.5l13.5 8.2-5.9 1.2 3.1 6.6-2.8 1.3-3.1-6.6-4.8 3.6z"
+            fill="#0F1014" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <div id="capbar"></div>
+  <div id="cap"></div>
+
+  <div id="fin">
+    <img id="logo" src="file:///C:/Claude/m4ksi/alya/assets/logo/m4ksi-wordmark-horizontal.png">
+    <div id="finline">ИИ-агент<br>для входящих обращений</div>
+    <div id="finsub">отвечает ночью · квалифицирует · передаёт менеджеру</div>
+    <div id="fincta">обсудить внедрение</div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════ время и сглаживание ══════════ */
+const S=(t,a,b)=>Math.max(0,Math.min(1,(t-a)/(b-a)));
+const eo=u=>1-Math.pow(1-u,3);                    // мягкий выход
+const eio=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2; // плавно с обеих сторон
+const eq=u=>1-Math.pow(1-u,5);                    // резкое начало, длинный хвост
+/* пружина: приезжает быстро, чуть переваливает и садится — «плавно, но чётко» */
+const spr=u=>u>=1?1:1-Math.exp(-7.2*u)*Math.cos(9.4*u);
+const L=(a,b,u)=>a+(b-a)*u;
+const px=v=>v.toFixed(2)+'px';
+const E=id=>document.getElementById(id);
+const skl=(n,f)=>{const a=Math.abs(n)%100,b=a%10;
+ return n+' '+(a>10&&a<20?f[2]:b>1&&b<5?f[1]:b===1?f[0]:f[2]);};
+const nf=n=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+
+/* ══════════ содержание (вымышленное) ══════════ */
+const TASK='Разбери ночные обращения и подготовь сводку к 09:00';
+const MSGS=[
+ {i:'АС',n:'Асхат Сериков',   t:'Доставляете в Костанай?',        h:'02:14',hot:false},
+ {i:'АЛ',n:'ТОО «Аяз Логистик»',t:'Пришлите счёт на 40 позиций',  h:'02:41',hot:true},
+ {i:'МБ',n:'Мадина Байжанова',t:'Работаете в выходные?',          h:'03:07',hot:false},
+ {i:'МА',n:'Медцентр «Алма»', t:'Нужен договор на квартал',       h:'03:52',hot:true},
+ {i:'СИ',n:'Салон «Ирис»',    t:'Сколько стоит обслуживание?',    h:'04:30',hot:false},
+ {i:'РК',n:'Руслан Ким',      t:'Можно счёт на оплату сегодня?',  h:'05:18',hot:true}
+];
+const KPI=[
+ {t:'обращений',    to:214, u:'',  spark:[6,9,7,12,15,11,18,14,21,17,24,20]},
+ {t:'ответил сам',  to:186, u:'',  spark:[4,7,6,10,13,10,16,13,19,16,22,19]},
+ {t:'среднее',      to:12,  u:'с', spark:[22,19,17,18,14,13,12,13,11,12,11,12]}
+];
+const HOURS=['21','22','23','00','01','02','03','04','05','06','07','08'];
+const CALLS=[9,14,18,23,27,30,31,26,21,16,12,10];
+const LEADS=[2,3,4,6,7,8,9,7,6,4,3,2];
+const NODES=[
+ {t:'Клиенты',  x:  2,y:120},{t:'Прайс',    x:410,y: 62},
+ {t:'Скрипты',  x:452,y:250},{t:'Договоры', x:404,y:470},
+ {t:'Наличие',  x: 30,y:560},{t:'Отчёты',   x:  0,y:352},
+ {t:'История',  x:150,y:686},{t:'Правила',  x:190,y:  0}
+];
+const HUBX=217,HUBY=280;                 /* левый-верхний угол круга-хаба */
+const HOT=[0,2,3];                       /* путь: Клиенты → Скрипты → Договоры */
+
+/* ══════════ разметка, собираемая один раз ══════════ */
+E('kpis').innerHTML=KPI.map((k,i)=>
+ '<div class="kpi" id="k'+i+'"><div class="t">'+k.t+'</div>'+
+ '<div><span class="v" id="kv'+i+'">0</span><span class="u">'+k.u+'</span></div>'+
+ '<svg viewBox="0 0 120 26" preserveAspectRatio="none"><path id="ks'+i+'" fill="none" '+
+ 'stroke="#5A4BFF" stroke-width="2" stroke-linecap="round" d=""/></svg></div>').join('');
+KPI.forEach((k,i)=>{
+ const mx=Math.max.apply(null,k.spark),mn=Math.min.apply(null,k.spark);
+ const d=k.spark.map((v,j)=>(j?'L':'M')+(j*120/(k.spark.length-1)).toFixed(1)+' '+
+   (24-22*(v-mn)/(mx-mn||1)).toFixed(1)).join(' ');
+ E('ks'+i).setAttribute('d',d);});
+
+E('msgs').innerHTML=MSGS.map((m,i)=>
+ '<div class="msg" id="m'+i+'"><div class="av">'+m.i+'</div>'+
+ '<div><div class="who">'+m.n+'</div><div class="txt">'+m.t+'</div></div>'+
+ '<div class="rt"><div class="tm">'+m.h+'</div>'+
+ '<div class="badge" id="bd'+i+'">в очереди</div></div></div>').join('');
+
+/* график */
+const CW=630,CH=620,PAD_L=22,PAD_R=22,BASE=520;
+const cx=i=>PAD_L+i*(CW-PAD_L-PAD_R)/(HOURS.length-1);
+const maxC=Math.max.apply(null,CALLS);
+const cy=v=>BASE-v*(BASE-40)/maxC;
+let sv='';
+for(let i=0;i<=4;i++){const y=BASE-i*(BASE-40)/4;
+ sv+='<line x1="0" y1="'+y.toFixed(1)+'" x2="630" y2="'+y.toFixed(1)+'" stroke="#EFF0F3"/>';}
+sv+='<defs><linearGradient id="fillg" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#5A4BFF" stop-opacity=".26"/>'+
+    '<stop offset="100%" stop-color="#5A4BFF" stop-opacity="0"/></linearGradient></defs>';
+/* столбики обращений — на заднем плане */
+HOURS.forEach((h,i)=>{const w=26,x=cx(i)-w/2;
+ sv+='<rect id="bar'+i+'" x="'+x.toFixed(1)+'" y="'+BASE+'" width="'+w+'" height="0" rx="6" fill="#EDEEF2"/>';});
+sv+='<path id="area" d="" fill="url(#fillg)" opacity="0"/>';
+sv+='<path id="line" d="" fill="none" stroke="#5A4BFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+sv+='<line id="guide" y1="20" y2="'+BASE+'" stroke="#5A4BFF" stroke-width="1.5" stroke-dasharray="5 6" opacity="0"/>';
+sv+='<circle id="dot" r="0" fill="#fff" stroke="#5A4BFF" stroke-width="4"/>';
+HOURS.forEach((h,i)=>{sv+='<text x="'+cx(i).toFixed(1)+'" y="'+(BASE+38)+'" text-anchor="middle" '+
+ 'fill="#9096A3" font-size="18" font-weight="500">'+h+'</text>';});
+E('chart').innerHTML=sv;
+
+/* сглаженная кривая по точкам (Catmull-Rom → Безье): «плавность» буквально */
+function smooth(pts){
+ let d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+ for(let i=0;i<pts.length-1;i++){
+  const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+  const c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
+  const c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+  d+='C'+c1x.toFixed(1)+' '+c1y.toFixed(1)+','+c2x.toFixed(1)+' '+c2y.toFixed(1)+','+
+     p2[0].toFixed(1)+' '+p2[1].toFixed(1);}
+ return d;}
+
+/* база знаний */
+const gw=E('gwrap');
+NODES.forEach((n,i)=>{const d=document.createElement('div');
+ d.className='node';d.id='n'+i;d.innerHTML='<i></i>'+n.t;
+ d.style.left=px(n.x);d.style.top=px(n.y);gw.appendChild(d);});
+E('hub').style.left=px(HUBX);E('hub').style.top=px(HUBY);
+let lv='';
+NODES.forEach((n,i)=>{lv+='<path id="e'+i+'" d="" fill="none" stroke="#DFE1E7" stroke-width="2"/>';});
+lv+='<circle id="spark" r="6" fill="#5A4BFF" opacity="0"/>';
+E('links').innerHTML=lv;
+/* центр хаба и центры карточек считаем после укладки в DOM */
+const HC=[HUBX+98,HUBY+98];
+const NC=NODES.map((n,i)=>{const e=E('n'+i);
+ return [n.x+e.offsetWidth/2,n.y+e.offsetHeight/2];});
+
+/* ══════════ сценарий ══════════ */
+const SC={task:[0,2.78],inbox:[2.68,5.9],work:[5.7,8.5],chart:[8.3,12.5],know:[12.3,16.0],fin:[15.9,18.0]};
+const CAPS=[
+ [0.30,2.5,'Задача ставится одним предложением'],
+ [2.75,5.65,'Агент разбирает ночные обращения'],
+ [5.95,8.25,'Отвечает сам и отмечает целевых'],
+ [8.65,12.2,'Показывает результат в цифрах'],
+ [12.6,15.8,'Знание остаётся в единой базе']
+];
+/* курсор появляется только там, где что-то делает: два щелчка и ведение по графику */
+let chartPoint=null;                       /* точка кривой в координатах кадра */
+function anchor(el){let x=0,y=0,e=el;
+ while(e&&e.id!=='stage'){x+=e.offsetLeft;y+=e.offsetTop;e=e.offsetParent;}
+ return [x+el.offsetWidth/2,y+el.offsetHeight/2];}
+const CLICKS=[
+ {id:'qsend',from:[900,980],t0:1.80,tc:2.28,t1:2.60},   /* «Запустить» */
+ {id:'sg1',  from:[520,760],t0:5.58,tc:6.06,t1:6.50}    /* «Целевые» */
+];
+const CHART_CUR=[9.15,12.30];
+
+function pane(id,vis,dy,sc,blur){const e=E(id);
+ e.style.opacity=vis.toFixed(3);
+ e.style.transform='translateY('+px(dy)+') scale('+(sc||1).toFixed(4)+')';
+ e.style.filter=blur?'blur('+blur.toFixed(2)+'px)':'none';}
+
+function cursorAt(t){
+ const c=E('cursor'),r=E('ripple');
+ let pos=null,vis=0,ro=0,rs=1;
+ CLICKS.forEach(k=>{
+  if(t>=k.t0-0.3&&t<=k.t1+0.3){
+   const to=anchor(E(k.id));
+   const u=eio(S(t,k.t0,k.tc));
+   pos=[L(k.from[0],to[0],u),L(k.from[1],to[1],u)];
+   vis=Math.min(eq(S(t,k.t0-0.25,k.t0+0.05)),1-eq(S(t,k.t1,k.t1+0.28)));
+   const kk=S(t,k.tc,k.tc+0.34);
+   if(kk>0&&kk<1){ro=(1-kk)*0.9;rs=1+kk*3.6;
+    r.style.left=px(to[0]-E('app').offsetLeft-7);
+    r.style.top=px(to[1]-E('app').offsetTop-7);}}});
+ if(t>=CHART_CUR[0]&&t<=CHART_CUR[1]+0.3&&chartPoint){
+  pos=chartPoint;
+  vis=Math.min(eq(S(t,CHART_CUR[0],CHART_CUR[0]+0.3)),1-eq(S(t,CHART_CUR[1],CHART_CUR[1]+0.25)));}
+ if(!pos){c.style.opacity='0';r.style.opacity='0';return;}
+ c.style.opacity=vis.toFixed(3);
+ c.style.transform='translate('+px(pos[0])+','+px(pos[1])+')';
+ r.style.opacity=ro.toFixed(3);r.style.transform='scale('+rs.toFixed(3)+')';}
+
+function seek(t){
+ /* камера: очень медленный наезд плюс дыхание — движение есть всегда */
+ const cam=1+0.017*eio(S(t,0,18))+0.0025*Math.sin(t*0.9);
+ E('stage').style.transform='scale('+cam.toFixed(4)+')';
+ E('stage').style.transformOrigin='50% '+(45+2.5*Math.sin(t*0.55)).toFixed(2)+'%';
+ E('mesh').style.transform='translate('+px(-t*3)+','+px(-t*5)+')';
+ E('halo').style.opacity=(0.8+0.2*Math.sin(t*1.4)).toFixed(3);
+
+ /* окно: пружинный влёт */
+ const inA=S(t,-0.3,1.05),sp=spr(inA);
+ E('app').style.opacity=eq(S(t,-0.2,0.5)).toFixed(3);
+ E('app').style.transform='translateY('+px(L(96,0,sp))+') scale('+L(0.94,1,sp).toFixed(4)+')';
+ const outA=S(t,15.55,16.25);
+ if(outA>0){E('app').style.opacity=(1-eq(outA)).toFixed(3);
+  E('app').style.transform='translateY('+px(L(0,-46,eio(outA)))+') scale('+L(1,1.06,eio(outA)).toFixed(4)+')';}
+ E('kick').style.opacity=(eo(S(t,0,0.5))*(1-S(t,15.6,16.1))).toFixed(3);
+
+ /* хлебные крошки меняются вместе с экраном */
+ const cr=[[0,'Ночная смена'],[2.5,'Входящие'],[8.3,'Аналитика'],[12.3,'База знаний']];
+ let cw='';cr.forEach(p=>{if(t>=p[0])cw=p[1]});E('crumb2').textContent=cw;
+
+ /* подпись кадра */
+ let cp='',cb=0,co=0;
+ CAPS.forEach(c=>{if(t>=c[0]-0.3&&t<c[1]+0.35){cp=c[2];
+  co=Math.min(eq(S(t,c[0]-0.28,c[0]+0.18)),1-eo(S(t,c[1],c[1]+0.3)));
+  cb=L(0,210,eio(S(t,c[0],c[1])));}});
+ E('cap').textContent=cp;E('cap').style.opacity=co.toFixed(3);
+ E('cap').style.transform='translateY('+px(L(16,0,eo(co)))+')';
+ E('capbar').style.width=px(cb);E('capbar').style.opacity=co.toFixed(3);
+
+ /* ───────── 1. задача ───────── */
+ {const a=SC.task,out=eio(S(t,a[1]-0.3,a[1]+0.2));
+  pane('p1',Math.min(eq(S(t,0.25,0.75)),1-eq(S(t,a[1]-0.3,a[1]+0.05))),L(0,-52,out),1,out*4);
+  const n=Math.round(L(0,TASK.length,eio(S(t,0.42,1.85))));
+  E('qs').textContent=TASK.slice(0,n);
+  E('qcur').style.opacity=n>=TASK.length?(Math.sin(t*9)>0?1:.12):1;
+  const go=S(t,2.28,2.36);                     /* нажатие — резкое, за два кадра */
+  E('qsend').style.background=go>0?'#0F1014':'#5A4BFF';
+  E('qsend').style.transform='scale('+(go>0&&go<1?0.965:1)+')';
+  E('qnotet').textContent=go>0?'задача принята':'агент готов принять задачу';
+  E('qpulse').style.opacity=(0.35+0.65*Math.abs(Math.sin(t*3.1))).toFixed(2);
+  for(let i=0;i<3;i++){const e=E('pl'+i),u=eq(S(t,1.05+i*0.16,1.45+i*0.16));
+   e.style.opacity=u.toFixed(3);
+   e.style.transform='translateY('+px(L(16,0,u))+')';
+   const ok=t>2.34+i*0.13;
+   e.className='pl'+(ok?' ok':'');}}
+
+ /* ───────── 2-3. обращения ───────── */
+ {const a=SC.inbox,inn=spr(S(t,a[0]+0.05,a[0]+0.9)),out=eio(S(t,8.15,8.6));
+  pane('p2',Math.min(eq(S(t,a[0]+0.05,a[0]+0.45)),1-eq(S(t,8.15,8.5))),L(L(58,0,inn),-46,out),1,
+       (1-Math.min(1,inn))*3);
+  /* KPI считают */
+  KPI.forEach((k,i)=>{const s0=a[0]+0.25+i*0.13,u=eio(S(t,s0,s0+1.15));
+   E('kv'+i).textContent=nf(L(0,k.to,u));
+   const e=E('k'+i);e.style.opacity=eq(S(t,s0,s0+0.35)).toFixed(3);
+   e.style.transform='translateY('+px(L(22,0,spr(S(t,s0,s0+0.8))))+')';
+   E('ks'+i).setAttribute('stroke-dasharray',(320*eio(S(t,s0+0.3,s0+1.4))).toFixed(0)+' 320');});
+  E('lh').style.opacity=eq(S(t,a[0]+0.35,a[0]+0.7)).toFixed(3);
+  E('seg').style.opacity=eq(S(t,a[0]+0.45,a[0]+0.8)).toFixed(3);
+  /* переключатель щёлкает по клику курсора */
+  const seg=t>6.10;
+  E('sg0').className='sg'+(seg?'':' on');E('sg1').className='sg'+(seg?' on':'');
+  /* строки приезжают по одной, потом агент отвечает */
+  MSGS.forEach((m,i)=>{
+   const s0=a[0]+0.55+i*0.115,u=spr(S(t,s0,s0+0.75)),e=E('m'+i);
+   const rep=S(t,5.95+i*0.1,6.2+i*0.1);           /* ответ агента */
+   const gone=(!m.hot)?eio(S(t,6.65+i*0.06,7.05+i*0.06)):0;   /* нецелевые сворачиваются */
+   const h=L(m.hot?92:92,m.hot?112:0,m.hot?eio(S(t,6.8,7.3)):gone);
+   e.style.height=px(h);
+   e.style.opacity=(Math.min(eq(S(t,s0,s0+0.3)),1)*(1-gone)).toFixed(3);
+   e.style.transform='translateX('+px(L(34,0,u)+L(0,-58,gone))+')';
+   const b=E('bd'+i);
+   if(rep>=1&&m.hot){b.className='badge hot';b.textContent='целевой · счёт';}
+   else if(rep>=1){b.className='badge done';b.textContent='ответил · 12 с';}
+   else if(rep>0){b.className='badge done';b.textContent='печатает…';}
+   else {b.className='badge';b.textContent='в очереди';}});
+  const sw=t>6.62;
+  E('k2').querySelector('.t').textContent=sw?'целевых':'среднее';
+  E('kv2').textContent=sw?'38':nf(L(0,12,eio(S(t,SC.inbox[0]+0.51,SC.inbox[0]+1.66))));
+  E('k2').querySelector('.u').textContent=sw?'':'с';
+  const fl=S(t,6.62,6.98);
+  E('k2').style.borderColor=(fl>0&&fl<1)?'#5A4BFF':'#E7E8EC';
+  E('k2').style.boxShadow=(fl>0&&fl<1)?'0 0 0 '+((1-fl)*5).toFixed(1)+'px rgba(90,75,255,.16)':'none';
+  E('lh').textContent=t>6.9?'Целевые обращения':'Ночные обращения';
+  /* сводка приезжает, когда список опустел */
+  const su2=spr(S(t,7.15,7.95));
+  E('sum').style.opacity=eq(S(t,7.15,7.5)).toFixed(3);
+  E('sum').style.transform='translateY('+px(L(28,0,su2))+')';
+  [].forEach.call(document.querySelectorAll('.srow'),(el,i)=>{
+   const u2=eq(S(t,7.35+i*0.12,7.7+i*0.12));
+   el.style.opacity=u2.toFixed(3);
+   el.style.transform='translateX('+px(L(14,0,u2))+')';});}
+
+ /* ───────── 4. график ───────── */
+ {const a=SC.chart,inn=spr(S(t,a[0]-0.1,a[0]+0.75)),out=eio(S(t,a[1]-0.3,a[1]+0.15));
+  pane('p3',Math.min(eq(S(t,a[0]-0.05,a[0]+0.4)),1-eq(S(t,a[1]-0.3,a[1]))),L(L(64,0,inn),-40,out),
+       L(1,0.97,out),(1-Math.min(1,inn))*3);
+  /* столбики */
+  const pts=[];
+  HOURS.forEach((h,i)=>{
+   const s0=a[0]+0.3+i*0.045,u=spr(S(t,s0,s0+0.7));
+   const hh=Math.max(0,(BASE-cy(CALLS[i]))*Math.min(1.02,u));
+   const b=E('bar'+i);b.setAttribute('height',hh.toFixed(1));b.setAttribute('y',(BASE-hh).toFixed(1));
+   pts.push([cx(i),cy(LEADS[i]*maxC/Math.max.apply(null,LEADS)*0.82)]);});
+  /* кривая заявок: рисуется штрихом, потом заливка */
+  const d=smooth(pts),ln=E('line');
+  ln.setAttribute('d',d);
+  const total=ln.getTotalLength?ln.getTotalLength():1400;
+  const draw=eio(S(t,a[0]+0.75,a[0]+1.95));
+  ln.setAttribute('stroke-dasharray',(total*draw).toFixed(1)+' '+total.toFixed(1));
+  const ar=E('area');
+  ar.setAttribute('d',d+'L'+cx(HOURS.length-1).toFixed(1)+' '+BASE+'L'+cx(0).toFixed(1)+' '+BASE+'Z');
+  ar.setAttribute('opacity',eio(S(t,a[0]+1.5,a[0]+2.3)).toFixed(3));
+  /* точка и подсказка едут за курсором — плавно, без рывков */
+  const hv=S(t,a[0]+1.5,a[0]+3.5);
+  const fi=Math.max(0,Math.min(HOURS.length-1.001,hv*(HOURS.length-1)));
+  const i0=Math.floor(fi),fr=fi-i0;
+  const hx=L(cx(i0),cx(i0+1),fr),hy=L(pts[i0][1],pts[i0+1][1],fr);
+  const hs=Math.min(eq(S(t,a[0]+1.45,a[0]+1.75)),1-eq(S(t,a[1]-0.55,a[1]-0.25)));
+  E('dot').setAttribute('cx',hx.toFixed(1));E('dot').setAttribute('cy',hy.toFixed(1));
+  E('dot').setAttribute('r',(9*hs).toFixed(1));
+  chartPoint=[E('app').offsetLeft+88+26+hx, E('app').offsetTop+84+26+118+hy];
+  const g=E('guide');g.setAttribute('x1',hx.toFixed(1));g.setAttribute('x2',hx.toFixed(1));
+  g.setAttribute('y1',(hy+14).toFixed(1));g.setAttribute('opacity',(hs*0.8).toFixed(3));
+  const tp=E('tip');
+  tp.style.opacity=hs.toFixed(3);
+  tp.style.left=px(Math.max(6,Math.min(26+hx-96,682-26-tp.offsetWidth)));
+  tp.style.top=px(26+118+hy-92+L(10,0,hs));
+  const hi=Math.round(fi);
+  E('tipa').textContent=HOURS[hi]+':00';
+  E('tipb').textContent=skl(CALLS[hi],['обращение','обращения','обращений'])+' · '+
+   skl(LEADS[hi],['заявка','заявки','заявок']);
+  /* крупные числа */
+  E('cbig').textContent=nf(L(0,214,eio(S(t,a[0]+0.35,a[0]+1.8))));
+  E('cbig2').textContent=Math.round(L(0,26,eio(S(t,a[0]+0.6,a[0]+2.2))))+'%';
+  E('legend').style.opacity=eq(S(t,a[0]+1.9,a[0]+2.3)).toFixed(3);
+  [].forEach.call(document.querySelectorAll('.fact'),(el,i)=>{
+   const u2=spr(S(t,a[0]+2.35+i*0.13,a[0]+3.05+i*0.13));
+   el.style.opacity=eq(S(t,a[0]+2.35+i*0.13,a[0]+2.7+i*0.13)).toFixed(3);
+   el.style.transform='translateY('+px(L(22,0,u2))+')';});}
+
+ /* ───────── 5. база знаний ───────── */
+ {const a=SC.know,inn=spr(S(t,a[0]-0.1,a[0]+0.8)),out=eio(S(t,a[1]-0.35,a[1]));
+  pane('p4',Math.min(eq(S(t,a[0]-0.05,a[0]+0.4)),1-eq(S(t,a[1]-0.35,a[1]-0.05))),L(L(60,0,inn),0,out),
+       L(1,0.93,out),(1-Math.min(1,inn))*3);
+  const hu=spr(S(t,a[0]+0.15,a[0]+0.95));
+  E('hub').style.opacity=eq(S(t,a[0]+0.1,a[0]+0.45)).toFixed(3);
+  E('hub').style.transform='scale('+L(0.5,1,hu).toFixed(4)+')';
+  NODES.forEach((n,i)=>{
+   const s0=a[0]+0.45+i*0.1,u=spr(S(t,s0,s0+0.8)),e=E('n'+i);
+   e.style.opacity=eq(S(t,s0,s0+0.3)).toFixed(3);
+   const dx=(HC[0]-NC[i][0])*(1-Math.min(1,u))*0.42,dy=(HC[1]-NC[i][1])*(1-Math.min(1,u))*0.42;
+   e.style.transform='translate('+px(dx)+','+px(dy)+') scale('+L(0.86,1,u).toFixed(4)+')';
+   const hot=HOT.indexOf(i)>=0&&t>a[0]+2.0;
+   e.className='node'+(hot?' hot':'');
+   /* связь — кривая, растёт от хаба к карточке */
+   const k=eio(S(t,s0-0.08,s0+0.55));
+   const x2=L(HC[0],NC[i][0]+dx,k),y2=L(HC[1],NC[i][1]+dy,k);
+   const mx=(HC[0]+x2)/2+(y2-HC[1])*0.14,my=(HC[1]+y2)/2-(x2-HC[0])*0.14;
+   const pe=E('e'+i);
+   pe.setAttribute('d','M'+HC[0]+' '+HC[1]+'Q'+mx.toFixed(1)+' '+my.toFixed(1)+','+x2.toFixed(1)+' '+y2.toFixed(1));
+   pe.setAttribute('stroke',hot?'#5A4BFF':'#DFE1E7');
+   pe.setAttribute('stroke-width',hot?'2.6':'2');});
+  E('gnote').style.opacity=eq(S(t,a[0]+1.5,a[0]+1.95)).toFixed(3);
+  /* искра идёт по подсвеченному пути */
+  const su=S(t,a[0]+2.05,a[1]-0.45);
+  const spk=E('spark');
+  if(su>0&&su<1){const seg=Math.min(HOT.length-0.001,su*HOT.length);
+   const k=Math.floor(seg),f=0.32+0.68*(seg-k),n1=NC[HOT[k]];
+   spk.setAttribute('opacity','1');
+   spk.setAttribute('cx',L(HC[0],n1[0],f).toFixed(1));
+   spk.setAttribute('cy',L(HC[1],n1[1],f).toFixed(1));}
+  else spk.setAttribute('opacity','0');}
+
+ /* ───────── 6. финал ───────── */
+ {const u=eq(S(t,15.85,16.5));
+  E('fin').style.opacity=u.toFixed(3);
+  E('logo').style.transform='scale('+L(0.92,1,spr(S(t,15.85,16.7))).toFixed(4)+')';
+  E('logo').style.opacity=u.toFixed(3);
+  const l1=eq(S(t,16.35,16.9)),l2=eq(S(t,16.65,17.15)),l3=eq(S(t,17.0,17.5));
+  E('finline').style.opacity=l1.toFixed(3);
+  E('finline').style.transform='translateY('+px(L(16,0,l1))+')';
+  E('finsub').style.opacity=(l2*0.9).toFixed(3);
+  E('finsub').style.transform='translateY('+px(L(14,0,l2))+')';
+  E('fincta').style.opacity=l3.toFixed(3);
+  E('fincta').style.transform='translateY('+px(L(12,0,l3))+')';}
+
+ cursorAt(t);
+}
+window.seek=seek;
+
+if(location.search.indexOf('manual')<0){
+ const t0=performance.now();
+ (function loop(){seek(((performance.now()-t0)/1000)%18);requestAnimationFrame(loop)})();
+}else seek(0);
+</script>

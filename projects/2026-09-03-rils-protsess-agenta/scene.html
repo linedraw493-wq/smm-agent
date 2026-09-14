@@ -1,0 +1,390 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>M4ksi — процесс агента</title>
+<style>
+@font-face{font-family:Inter;src:url('file:///C:/Claude/m4ksi/alya/assets/fonts/Inter-Regular.ttf');font-weight:400}
+@font-face{font-family:Inter;src:url('file:///C:/Claude/m4ksi/alya/assets/fonts/Inter-SemiBold.ttf');font-weight:600}
+@font-face{font-family:Inter;src:url('file:///C:/Claude/m4ksi/alya/assets/fonts/Inter-ExtraBold.ttf');font-weight:800}
+
+:root{
+  --bg:#0a1929; --ink:#f7f1e9; --soft:#f7f1e9d9; --mute:#f7f1e98c;
+  --acc:#5f9bff; --hair:#f7f1e928; --pane:#0e2135;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+#stage{position:relative;width:1080px;height:1920px;background:var(--bg);overflow:hidden;
+  font-variant-numeric:tabular-nums}
+
+/* ---------- фон ---------- */
+#grid{position:absolute;inset:-40px;opacity:.5;
+  background-image:linear-gradient(var(--hair) 1px,transparent 1px),linear-gradient(90deg,var(--hair) 1px,transparent 1px);
+  background-size:90px 90px}
+#glow{position:absolute;left:50%;top:250px;width:1500px;height:1500px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(95,155,255,.22) 0%,rgba(95,155,255,.07) 35%,transparent 65%)}
+#glow2{position:absolute;left:50%;top:1750px;width:1400px;height:1200px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(95,155,255,.13) 0%,transparent 60%)}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(3,10,18,.75) 100%)}
+#noise{position:absolute;inset:0;opacity:.045;mix-blend-mode:overlay}
+
+/* ---------- рамка кадра ---------- */
+#kicker{position:absolute;left:100px;top:296px;font-size:26px;font-weight:600;letter-spacing:.22em;
+  color:var(--acc);text-transform:uppercase}
+#kdot{display:inline-block;width:12px;height:12px;background:var(--acc);margin-right:18px;vertical-align:2px}
+#caption{position:absolute;left:100px;top:1552px;width:770px;font-size:34px;font-weight:600;color:var(--soft);
+  letter-spacing:.01em}
+#capbar{position:absolute;left:100px;top:1528px;width:0;height:3px;background:var(--acc)}
+
+/* ---------- окно ---------- */
+#win{position:absolute;left:100px;top:340px;width:770px;height:1120px;background:var(--pane);
+  border:1px solid var(--hair);box-shadow:0 60px 140px rgba(0,0,0,.55),0 0 90px rgba(95,155,255,.10);
+  overflow:hidden;transform-origin:50% 50%}
+#bar{position:absolute;left:0;top:0;width:770px;height:86px;border-bottom:1px solid var(--hair);
+  display:flex;align-items:center;padding:0 34px;gap:16px}
+#bar .t{font-size:23px;font-weight:600;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
+#bar .live{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:21px;letter-spacing:.14em;
+  color:var(--mute);text-transform:uppercase}
+#livedot{width:11px;height:11px;background:var(--acc)}
+#body{position:absolute;left:0;top:86px;width:770px;height:1034px;overflow:hidden}
+.layer{position:absolute;inset:0;padding:44px 44px}
+
+/* ---------- сцена 1 ---------- */
+#q{display:flex;flex-direction:column;justify-content:center;height:100%}
+#qlab{font-size:23px;font-weight:600;letter-spacing:.2em;color:var(--mute);text-transform:uppercase;margin-bottom:34px}
+#qtext{font-size:52px;font-weight:600;line-height:1.28;color:var(--ink)}
+#qcur{display:inline-block;width:4px;height:52px;background:var(--acc);vertical-align:-8px;margin-left:6px}
+#qhint{margin-top:56px;font-size:28px;color:var(--mute);display:flex;align-items:center;gap:18px}
+.wv{display:inline-block;width:5px;background:var(--acc)}
+
+/* ---------- сцена 2-3 список ---------- */
+#lhead{display:flex;align-items:flex-end;gap:24px;margin-bottom:26px}
+#lhead .lab{font-size:23px;font-weight:600;letter-spacing:.2em;color:var(--mute);text-transform:uppercase}
+#cnt{margin-left:auto;font-size:78px;font-weight:800;color:var(--ink);line-height:.9}
+#cntu{font-size:24px;font-weight:600;letter-spacing:.16em;color:var(--mute);text-transform:uppercase;padding-bottom:10px}
+#chips{display:flex;gap:14px;margin-bottom:22px;height:56px}
+.chip{border:1px solid var(--hair);padding:12px 22px;font-size:24px;color:var(--soft);white-space:nowrap}
+.chip.on{border-color:var(--acc);color:var(--acc)}
+.row{display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--hair);overflow:hidden}
+.row .nm{font-size:31px;font-weight:600;color:var(--ink)}
+.row .org{font-size:24px;color:var(--mute);margin-top:7px}
+.row .sum{margin-left:auto;font-size:31px;font-weight:600;color:var(--soft);white-space:nowrap}
+.row .mk{width:6px;align-self:stretch;background:transparent}
+#cta{margin-top:34px;border:1px solid var(--acc);color:var(--acc);font-size:29px;font-weight:600;
+  padding:24px 30px;display:flex;align-items:center;letter-spacing:.02em}
+#ctaar{margin-left:auto;font-style:normal;font-size:32px}
+
+/* ---------- сцена 4 график ---------- */
+#chead{display:flex;align-items:flex-end;margin-bottom:20px}
+#chead .lab{font-size:23px;font-weight:600;letter-spacing:.2em;color:var(--mute);text-transform:uppercase}
+#cval{margin-left:auto;font-size:56px;font-weight:800;color:var(--acc);line-height:1}
+#tip{position:absolute;padding:15px 20px;background:#0a1929;border:1px solid var(--acc);white-space:nowrap}
+#tip .a{font-size:22px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase}
+#tip .b{font-size:28px;font-weight:700;color:var(--ink);margin-top:6px}
+
+/* ---------- сцена 5 граф ---------- */
+#ghead{display:flex;align-items:flex-end;margin-bottom:6px}
+#ghead .lab{font-size:23px;font-weight:600;letter-spacing:.2em;color:var(--mute);text-transform:uppercase}
+#gsub{margin-left:auto;font-size:24px;color:var(--mute)}
+
+/* ---------- сцена 6 ---------- */
+#L5{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#logo{width:620px;filter:saturate(1.08)}
+#endline{margin-top:46px;font-size:42px;font-weight:600;color:var(--soft);text-align:center;line-height:1.35}
+#endacc{color:var(--acc)}
+#cta2{margin-top:64px;font-size:26px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--mute);border-top:1px solid var(--hair);padding-top:26px}
+</style>
+
+<div id="stage">
+  <div id="grid"></div><div id="glow"></div><div id="glow2"></div>
+
+  <div id="kicker"><i id="kdot"></i>M4KSI · ИИ-агент</div>
+
+  <div id="win">
+    <div id="bar"><div class="t" id="bartitle">панель</div>
+      <div class="live"><i id="livedot"></i><span>живо</span></div></div>
+    <div id="body">
+
+      <div class="layer" id="L1"><div id="q">
+        <div id="qlab">задача словами</div>
+        <div id="qtext"><span id="qs"></span><i id="qcur"></i></div>
+        <div id="qhint">
+          <span class="wv" id="w1"></span><span class="wv" id="w2"></span><span class="wv" id="w3"></span>
+          <span class="wv" id="w4"></span><span id="qhtext">агент слушает</span>
+        </div>
+      </div></div>
+
+      <div class="layer" id="L2">
+        <div id="lhead"><div class="lab" id="llab">собрано за ночь</div>
+          <div id="cnt">0</div><div id="cntu">лотов</div></div>
+        <div id="chips"></div>
+        <div id="rows"></div>
+        <div id="cta"><span>собрать папку к подаче</span><i id="ctaar">→</i></div>
+      </div>
+
+      <div class="layer" id="L3">
+        <div id="chead"><div class="lab">выгода по лотам</div><div id="cval">0%</div></div>
+        <svg id="chart" width="682" height="850" viewBox="0 0 682 850"></svg>
+        <div id="tip"><div class="a" id="tipa">лот 07</div><div class="b" id="tipb">маржа 18%</div></div>
+      </div>
+
+      <div class="layer" id="L4">
+        <div id="ghead"><div class="lab">модель знаний</div><div id="gsub">одна база на всё</div></div>
+        <svg id="graph" width="682" height="880" viewBox="0 0 682 880"></svg>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="L5"><div id="end">
+    <img id="logo" src="file:///C:/Claude/m4ksi/alya/assets/logo/m4ksi-wordmark-horizontal.png">
+    <div id="endline">агент, который делает<br><span id="endacc">ночную работу за вас</span></div>
+    <div id="cta2">напишите в директ</div>
+  </div></div>
+
+  <div id="capbar"></div>
+  <div id="caption"></div>
+  <div id="vig"></div>
+  <svg id="noise"><filter id="nf"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3"/></filter>
+    <rect width="100%" height="100%" filter="url(#nf)"/></svg>
+</div>
+
+<script>
+/* ================= утилиты ================= */
+const S=(t,a,b)=>Math.max(0,Math.min(1,(t-a)/(b-a)));
+const eo=u=>1-Math.pow(1-u,3);
+const eio=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+const eb=u=>{const c1=1.5,c3=c1+1;return 1+c3*Math.pow(u-1,3)+c1*Math.pow(u-1,2)};
+const L=(a,b,u)=>a+(b-a)*u;
+const px=v=>v.toFixed(2)+'px';
+const E=id=>document.getElementById(id);
+
+/* ================= данные (выдуманные) ================= */
+const QUERY='собери тендеры на молочку за ночь';
+const ROWS=[
+ {n:'Молоко 2,5% · 4 200 шт',  o:'Детский сад №14 · Павлодар',   s:'3 240 000 ₸', keep:true},
+ {n:'Говядина · 2 000 кг',     o:'Комбинат питания · Экибастуз', s:'9 800 000 ₸', keep:false},
+ {n:'Кефир 1% · 1 800 шт',     o:'Гимназия №7 · Павлодар',       s:'1 410 000 ₸', keep:true},
+ {n:'Хлеб формовой · 12 000',  o:'Столовая №2 · Аксу',           s:'2 050 000 ₸', keep:false},
+ {n:'Масло сливочное · 900 кг',o:'Больница №3 · Павлодар',       s:'5 620 000 ₸', keep:true},
+ {n:'Сыр твёрдый · 300 кг',    o:'Сеть кафе · Астана',           s:'4 180 000 ₸', keep:false},
+ {n:'Овощи сезон · 3 400 кг',  o:'Санаторий · Баянаул',          s:'2 760 000 ₸', keep:false},
+ {n:'Творог 9% · 600 кг',      o:'Пансионат · Караганда',        s:'1 980 000 ₸', keep:false}
+];
+const CHIPS=['молочка','наш регион','до 6 млн ₸'];
+const BARS=[7,11,9,14,8,12,18,10,13,9,15,11];
+const NODES=[
+ {t:'ЛОТЫ',x:341,y:118},{t:'ЦЕНЫ',x:576,y:248},{t:'СКЛАД',x:616,y:508},
+ {t:'ДОКУМЕНТЫ',x:492,y:734},{t:'КЛИЕНТЫ',x:196,y:748},{t:'ОТЧЁТЫ',x:74,y:544},
+ {t:'ПРАВИЛА',x:70,y:278},{t:'ИСТОРИЯ',x:170,y:112}
+];
+const HUB={t:'LLM WIKI',x:341,y:430};
+const PATH=[0,1,3];
+
+/* ================= разметка, собираемая один раз ================= */
+E('chips').innerHTML=CHIPS.map((c,i)=>'<div class="chip" id="ch'+i+'">'+c+'</div>').join('');
+E('rows').innerHTML=ROWS.map((r,i)=>
+ '<div class="row" id="r'+i+'"><i class="mk" id="mk'+i+'"></i><div><div class="nm">'+r.n+
+ '</div><div class="org">'+r.o+'</div></div><div class="sum">'+r.s+'</div></div>').join('');
+
+const CH=E('chart'),cw=682,base=768,bw=40,gap=16;
+const x0=(cw-(BARS.length*bw+(BARS.length-1)*gap))/2;
+let s='';
+for(let i=1;i<6;i++){const y=base-i*128;s+='<line x1="0" y1="'+y+'" x2="682" y2="'+y+'" stroke="#f7f1e918"/>';}
+s+='<line x1="0" y1="'+base+'" x2="682" y2="'+base+'" stroke="#f7f1e94a" stroke-width="2"/>';
+BARS.forEach((v,i)=>{const x=x0+i*(bw+gap);
+ s+='<rect id="b'+i+'" x="'+x+'" y="'+base+'" width="'+bw+'" height="0" fill="#5f9bff"/>';});
+s+='<path id="avg" d="" stroke="#f7f1e9" stroke-width="3" fill="none" stroke-dasharray="10 12" opacity="0"/>';
+s+='<text id="ax1" x="'+(x0+bw/2)+'" y="'+(base+42)+'" text-anchor="middle" fill="#f7f1e98c" font-size="20" letter-spacing="1">лот 01</text>';
+s+='<text id="ax2" x="'+(x0+11*(bw+gap)+bw/2)+'" y="'+(base+42)+'" text-anchor="middle" fill="#f7f1e98c" font-size="20" letter-spacing="1">лот 12</text>';
+s+='<circle id="pt" r="11" fill="#f7f1e9" opacity="0"/>';
+s+='<line id="scan" y1="0" y2="'+base+'" stroke="#5f9bff" stroke-width="2" opacity="0"/>';
+CH.innerHTML=s;
+
+const GR=E('graph');let g='';
+NODES.forEach((n,i)=>{g+='<line id="e'+i+'" x1="'+HUB.x+'" y1="'+HUB.y+'" x2="'+HUB.x+'" y2="'+HUB.y+
+ '" stroke="#f7f1e938" stroke-width="2"/>';});
+g+='<circle id="halo" cx="'+HUB.x+'" cy="'+HUB.y+'" r="150" fill="none" stroke="#5f9bff" stroke-width="2" opacity="0"/>';
+g+='<circle id="hub" cx="'+HUB.x+'" cy="'+HUB.y+'" r="0" fill="#5f9bff"/>';
+g+='<text id="hubt" x="'+HUB.x+'" y="'+(HUB.y+3)+'" text-anchor="middle" fill="#0a1929" font-size="27" font-weight="800" letter-spacing="1.5" opacity="0">LLM</text>';
+g+='<text id="hubt2" x="'+HUB.x+'" y="'+(HUB.y+37)+'" text-anchor="middle" fill="#0a1929" font-size="27" font-weight="800" letter-spacing="1.5" opacity="0">WIKI</text>';
+NODES.forEach((n,i)=>{
+ g+='<circle id="n'+i+'" cx="'+n.x+'" cy="'+n.y+'" r="0" fill="#0e2135" stroke="#f7f1e96b" stroke-width="2"/>';
+ g+='<text id="t'+i+'" x="'+n.x+'" y="'+(n.y+72)+'" text-anchor="middle" fill="#f7f1e9" font-size="21" font-weight="600" letter-spacing="1.2" opacity="0">'+n.t+'</text>';});
+g+='<circle id="spark" r="10" fill="#f7f1e9" opacity="0"/>';
+GR.innerHTML=g;
+
+/* ================= сценарий ================= */
+const T={q:[0,2.5], list:[2.4,5.5], filt:[5.4,8.3], chart:[8.2,12.3], graph:[12.2,16.1], end:[16.0,18.0]};
+const CAPS=[
+ [0.35,2.4,'ставите задачу словами'],
+ [2.7,5.4,'агент собирает всю ночь'],
+ [5.7,8.2,'оставляет только ваше'],
+ [8.5,12.2,'считает выгоду по каждому'],
+ [12.5,15.9,'и складывает всё в одну базу']
+];
+
+function layer(id,vis,dy,sc){const e=E(id);e.style.opacity=vis;
+ e.style.transform='translateY('+px(dy)+') scale('+(sc||1).toFixed(4)+')';
+ e.style.filter=vis<1?'blur('+((1-vis)*7).toFixed(2)+'px)':'none';}
+
+function seek(t){
+ /* ---- камера: медленный наезд + микро-качание ---- */
+ const cam=1.0+0.020*eio(S(t,0,18))+0.003*Math.sin(t*1.1);
+ E('stage').style.transform='scale('+cam.toFixed(4)+')';
+ E('stage').style.transformOrigin='50% '+(46+3*Math.sin(t*0.7)).toFixed(2)+'%';
+ E('grid').style.transform='translateY('+px(-t*7)+')';
+ E('glow').style.opacity=(0.75+0.25*Math.sin(t*1.6)).toFixed(3);
+
+ /* ---- влёт окна ---- */
+ const inW=S(t,-0.35,0.75);
+ E('win').style.opacity=eo(inW).toFixed(3);
+ E('win').style.transform='translateY('+px(L(70,0,eb(inW)))+') scale('+L(0.955,1,eo(inW)).toFixed(4)+')';
+ const outW=S(t,15.75,16.35);
+ if(outW>0){E('win').style.opacity=(1-eo(outW)).toFixed(3);
+  E('win').style.transform='scale('+L(1,1.10,eio(outW)).toFixed(4)+')';}
+ E('kicker').style.opacity=(eo(S(t,0,0.45))*(1-S(t,15.9,16.4))).toFixed(3);
+ E('livedot').style.opacity=(0.35+0.65*Math.abs(Math.sin(t*2.4))).toFixed(3);
+
+ /* ---- заголовок окна ---- */
+ const titles=[[0,'запрос'],[2.4,'лоты · ночная выборка'],[8.2,'выгода'],[12.2,'llm wiki'],[16,'m4ksi']];
+ let ti='';titles.forEach(p=>{if(t>=p[0])ti=p[1]});E('bartitle').textContent=ti;
+
+ /* ---- подпись снизу ---- */
+ let cap='',cbw=0,co=0;
+ CAPS.forEach(c=>{if(t>=c[0]-0.3&&t<c[1]+0.3){cap=c[2];
+   co=Math.min(eo(S(t,c[0]-0.25,c[0]+0.25)),1-eo(S(t,c[1]-0.05,c[1]+0.3)));
+   cbw=L(0,240,eio(S(t,c[0],c[1])));}});
+ E('caption').textContent=cap;E('caption').style.opacity=co.toFixed(3);
+ E('caption').style.transform='translateY('+px(L(14,0,co))+')';
+ E('capbar').style.width=px(cbw);E('capbar').style.opacity=co.toFixed(3);
+
+ /* ================= сцена 1 — запрос ================= */
+ {const a=T.q,vis=Math.min(eo(S(t,0.15,0.7)),1-eo(S(t,a[1]-0.35,a[1]+0.25)));
+  layer('L1',vis,L(0,-70,eio(S(t,a[1]-0.35,a[1]+0.25))));
+  const n=Math.round(L(0,QUERY.length,eio(S(t,0.12,1.55))));
+  E('qs').textContent=QUERY.slice(0,n);
+  E('qcur').style.opacity=(n>=QUERY.length?(Math.sin(t*9)>0?1:0.15):1);
+  E('qlab').style.opacity=eo(S(t,0.02,0.45)).toFixed(3);
+  const done=S(t,1.5,1.85);
+  E('qhtext').textContent=done>0.5?'принято':'агент слушает';
+  E('qhint').style.opacity=eo(S(t,0.35,0.85)).toFixed(3);
+  for(let i=1;i<=4;i++){const h=L(10,44,(0.5+0.5*Math.sin(t*7.5+i*1.25)));
+   const e=E('w'+i);e.style.height=px(done>0.5?10:h);e.style.opacity=done>0.5?'0.4':'1';}}
+
+ /* ================= сцены 2-3 — список ================= */
+ {const inn=eo(S(t,2.45,3.0)),out=eio(S(t,8.05,8.55));
+  layer('L2',Math.min(inn,1-eo(S(t,8.05,8.5))),L(L(60,0,inn),-90,out));
+  let c=Math.round(L(0,127,eio(S(t,2.6,4.5))));
+  const fs=S(t,6.6,7.35); if(fs>0)c=Math.round(L(127,9,eio(fs)));
+  E('cnt').textContent=c;
+  E('cnt').style.color=fs>0.55?'#5f9bff':'#f7f1e9';
+  E('llab').textContent=fs>0.55?'подходит вам':'собрано за ночь';
+  CHIPS.forEach((_,i)=>{const s0=5.65+i*0.32,u=eo(S(t,s0,s0+0.3)),e=E('ch'+i);
+   e.style.opacity=u.toFixed(3);e.style.transform='translateY('+px(L(16,0,u))+')';
+   if(t>s0+0.24)e.classList.add('on');else e.classList.remove('on');});
+  E('chips').style.opacity=eo(S(t,5.6,5.9)).toFixed(3);
+  E('chips').style.height=px(L(0,56,eo(S(t,5.55,5.95))));
+  E('chips').style.marginBottom=px(L(0,22,eo(S(t,5.55,5.95))));
+  ROWS.forEach((r,i)=>{
+   const s0=2.75+i*0.115,u=eo(S(t,s0,s0+0.5)),e=E('r'+i);
+   let drop=0;
+   if(!r.keep){const d0=6.35+ROWS.filter((q,j)=>!q.keep&&j<i).length*0.075;drop=eio(S(t,d0,d0+0.45));}
+   e.style.height=px(r.keep?L(92,124,eio(S(t,6.5,7.2))):L(92,0,drop));
+   e.style.opacity=(u*(1-drop)).toFixed(3);
+   e.style.transform='translateX('+px(L(46,0,u)+L(0,-70,drop))+')';
+   const keepU=r.keep?eo(S(t,6.8,7.3)):0;
+   E('mk'+i).style.background=keepU>0?'#5f9bff':'transparent';
+   E('mk'+i).style.opacity=keepU.toFixed(3);});
+  const cu=eo(S(t,7.35,7.85)),cta=E('cta');
+  cta.style.opacity=cu.toFixed(3);
+  cta.style.transform='translateY('+px(L(26,0,cu))+')';
+  E('ctaar').style.transform='translateX('+px(8*Math.sin(t*3.2))+')';}
+
+ /* ================= сцена 4 — график ================= */
+ {const a=T.chart,inn=eo(S(t,a[0]-0.15,a[0]+0.5)),out=eio(S(t,a[1]-0.35,a[1]+0.2));
+  layer('L3',Math.min(inn,1-eo(S(t,a[1]-0.35,a[1]+0.15))),L(L(80,0,inn),-40,out),L(1,0.94,out));
+  const top=BARS.indexOf(Math.max.apply(null,BARS));
+  let pts=[];
+  BARS.forEach((v,i)=>{
+   const s0=a[0]+0.35+i*0.055,u=eb(S(t,s0,s0+0.62));
+   const live=1+0.022*Math.sin(t*3.1+i*0.9)*eo(S(t,s0+0.6,s0+1.0));
+   const hh=Math.max(0,v*34*u*live);
+   const e=E('b'+i);e.setAttribute('height',hh.toFixed(1));e.setAttribute('y',(base-hh).toFixed(1));
+   const hot=(i===top)&&t>a[0]+2.05;
+   e.setAttribute('opacity',(hot?1:L(0.34,0.62,Math.min(1,u))).toFixed(3));
+   pts.push([x0+i*(bw+gap)+bw/2,base-hh]);});
+  const lu=eio(S(t,a[0]+1.15,a[0]+2.0));
+  const dpath=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const av=E('avg');av.setAttribute('d',dpath);av.setAttribute('opacity',(lu*0.8).toFixed(3));
+  const tot=pts.length*90;av.setAttribute('stroke-dasharray',(tot*lu).toFixed(1)+' '+tot);
+  const su=S(t,a[0]+1.25,a[0]+2.35);
+  const sx=L(pts[0][0],pts[pts.length-1][0],eio(su));
+  const sc2=E('scan');sc2.setAttribute('x1',sx.toFixed(1));sc2.setAttribute('x2',sx.toFixed(1));
+  sc2.setAttribute('opacity',(su>0&&su<1?0.5:0).toFixed(2));
+  const pu=eo(S(t,a[0]+2.05,a[0]+2.4));
+  const pd=E('pt');pd.setAttribute('cx',pts[top][0]);pd.setAttribute('cy',pts[top][1]);
+  pd.setAttribute('opacity',pu.toFixed(3));pd.setAttribute('r',(11*pu).toFixed(1));
+  const vu=eio(S(t,a[0]+0.5,a[0]+2.3));
+  E('cval').textContent=Math.round(L(0,18,vu))+'%';
+  E('cval').style.opacity=eo(S(t,a[0]+0.35,a[0]+0.8)).toFixed(3);
+  const tu=Math.min(eo(S(t,a[0]+2.15,a[0]+2.55)),1-eo(S(t,a[1]-0.5,a[1]-0.2)));
+  const tp=E('tip');
+  tp.style.opacity=tu.toFixed(3);
+  tp.style.left=px(Math.max(0,Math.min(44+pts[top][0]-170,770-44-346)));
+  tp.style.top=px(Math.max(120+pts[top][1]-126,104)+L(16,0,tu));
+  E('tipa').textContent='лот 07 · масло 900 кг';
+  E('tipb').textContent='маржа 18% · +540 000 ₸';}
+
+ /* ================= сцена 5 — граф ================= */
+ {const a=T.graph,inn=eo(S(t,a[0]+0.1,a[0]+0.75)),out=eio(S(t,a[1]-0.4,a[1]));
+  layer('L4',Math.min(inn,1-eo(S(t,a[1]-0.45,a[1]-0.05))),L(L(80,0,inn),0,out),L(1,0.85,out));
+  const hu=eb(S(t,a[0]+0.25,a[0]+0.95));
+  E('hub').setAttribute('r',(84*Math.max(0,hu)).toFixed(1));
+  const hto=eo(S(t,a[0]+0.7,a[0]+1.0)).toFixed(3);
+  E('hubt').setAttribute('opacity',hto);E('hubt2').setAttribute('opacity',hto);
+  const ha=S(t,a[0]+0.5,a[0]+2.6);
+  E('halo').setAttribute('r',L(70,190,ha).toFixed(1));
+  E('halo').setAttribute('opacity',(Math.sin(Math.PI*ha)*0.5).toFixed(3));
+  NODES.forEach((n,i)=>{
+   const s0=a[0]+0.6+i*0.115,u=eb(S(t,s0,s0+0.7)),lu2=eio(S(t,s0-0.1,s0+0.5));
+   E('n'+i).setAttribute('r',(38*Math.max(0,u)).toFixed(1));
+   E('t'+i).setAttribute('opacity',eo(S(t,s0+0.25,s0+0.55)).toFixed(3));
+   const e=E('e'+i);
+   e.setAttribute('x2',L(HUB.x,n.x,lu2).toFixed(1));
+   e.setAttribute('y2',L(HUB.y,n.y,lu2).toFixed(1));
+   const hot=PATH.indexOf(i)>=0&&t>a[0]+2.35;
+   e.setAttribute('stroke',hot?'#5f9bff':'#f7f1e938');
+   e.setAttribute('stroke-width',hot?'3':'2');
+   E('n'+i).setAttribute('stroke',hot?'#5f9bff':'#f7f1e96b');
+   E('n'+i).setAttribute('fill',hot?'#12304f':'#0e2135');});
+  const su=S(t,a[0]+2.4,a[1]-0.35);
+  if(su>0&&su<1){const seg=Math.min(PATH.length-0.001,su*PATH.length);
+   const k=Math.floor(seg),f=seg-k,n1=NODES[PATH[k]];
+   const sp=E('spark');sp.setAttribute('opacity','1');
+   const ff=0.3+0.7*f;
+   sp.setAttribute('cx',L(HUB.x,n1.x,ff).toFixed(1));
+   sp.setAttribute('cy',L(HUB.y,n1.y,ff).toFixed(1));}
+  else E('spark').setAttribute('opacity','0');}
+
+ /* ================= сцена 6 — финал ================= */
+ {const u=eo(S(t,15.95,16.7));
+  layer('L5',u,L(40,0,u));
+  E('L5').style.zIndex=9;
+  E('logo').style.opacity=u.toFixed(3);
+  E('logo').style.transform='scale('+L(0.9,1,eb(S(t,15.95,16.85))).toFixed(4)+')';
+  E('endline').style.opacity=eo(S(t,16.45,17.05)).toFixed(3);
+  E('endline').style.transform='translateY('+px(L(18,0,eo(S(t,16.45,17.05))))+')';
+  const c2=eo(S(t,17.0,17.5));
+  E('cta2').style.opacity=c2.toFixed(3);
+  E('cta2').style.transform='translateY('+px(L(14,0,c2))+')';
+  if(u>0)E('win').style.opacity='0';}
+}
+window.seek=seek;
+
+/* живой просмотр, если не рендер */
+if(location.search.indexOf('manual')<0){
+ const t0=performance.now();
+ (function loop(){const t=((performance.now()-t0)/1000)%18;seek(t);requestAnimationFrame(loop)})();
+}else seek(0);
+</script>
